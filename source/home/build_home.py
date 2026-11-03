@@ -4,13 +4,14 @@ PUB = "--pub" in sys.argv
 css = Path("../course2/style.css").read_text() + """
 .courses { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 18px; }
 .courses > * { min-width: 0; }
-.course { background: var(--panel); border: 2px solid var(--line); border-radius: 18px; padding: 20px; display: grid; gap: 12px; align-content: start; }
+/* Cards stretch to the same height, and margin-top: auto pins each Start button to the bottom so they line up. */
+.course { background: var(--panel); border: 2px solid var(--line); border-radius: 18px; padding: 20px; display: flex; flex-direction: column; gap: 12px; }
 .course .num { background: none; padding: 0; font-family: var(--head); font-size: 15px; color: var(--coral); font-weight: 700; }
 .course h2 { font-size: 30px; }
 .course ol { margin: 0; padding-left: 22px; display: grid; gap: 3px; font-size: 15.5px; color: var(--muted); }
 .course .facts { display: flex; flex-wrap: wrap; gap: 8px; }
 .course .facts span { background: var(--soft); border-radius: 999px; padding: 3px 11px; font-size: 13.5px; font-weight: 700; }
-a.start { display: inline-block; justify-self: start; background: var(--blue); color: var(--panel); text-decoration: none; font-weight: 800; border-radius: 12px; padding: 10px 18px; font-size: 17px; }
+a.start { display: inline-block; align-self: flex-start; margin-top: auto; background: var(--blue); color: var(--panel); text-decoration: none; font-weight: 800; border-radius: 12px; padding: 10px 18px; font-size: 17px; }
 a.start:hover { filter: brightness(1.08); }
 a.start:focus-visible { outline: 3px solid var(--sun); outline-offset: 3px; }
 """
