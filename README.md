@@ -11,7 +11,9 @@ Each lesson has an explainer character, Vox, interactive labs, and notes linking
 
 ## Open the courses
 
-Open `START HERE.html` in a web browser. Everything works offline, apart from the web fonts.
+Online: <https://khislatjon.github.io/spam-dvc-courses/>
+
+Offline: open `START HERE.html` in a web browser. Everything works offline, apart from the web fonts.
 
 ## Rebuild after editing
 
