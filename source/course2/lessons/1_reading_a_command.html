@@ -1,0 +1,73 @@
+<header>
+  <div class="ep">Lesson 1</div>
+  <h1>Reading a Command</h1>
+  <p class="lede">A command looks scary, but it's only a sentence telling the computer what to do.</p>
+</header>
+<section>
+  <h2>It's like ordering food</h2>
+  <vox>Think of ordering a pizza: "One pizza, large, extra cheese, to my house." The tool is the pizza, and the flags are your choices. In a terminal, a flag starts with a dash, and usually a value follows it.</vox>
+  <p>Tap any coloured part of this real command.</p>
+  <div class="lab">
+    <div class="term" id="t"></div>
+    <div class="real" id="ex" aria-live="polite"><div class="t">Tap a part above</div><div>Each part is explained here.</div></div>
+  </div>
+</section>
+<section>
+  <h2>Three tools, one chain</h2>
+  <p>You'll use up to three tools. Each one writes a file, and the next one reads it, like passing a baton in a relay race.</p>
+  <div class="wrap"><table>
+    <thead><tr><th scope="col" class="n">Order</th><th scope="col">Tool</th><th scope="col">Job</th><th scope="col">Writes</th></tr></thead>
+    <tbody>
+      <tr><td class="n">1</td><th scope="row"><code>spam-reg</code></th><td>One Phi for the whole scan</td><td><code>name-registration.tsv</code></td></tr>
+      <tr><td class="n">2</td><th scope="row"><code>spam-pixelSearch</code></th><td>Optional: a rough start for each window</td><td><code>name-pixelSearch.tsv</code></td></tr>
+      <tr><td class="n">3</td><th scope="row"><code>spam-ldic</code></th><td>The final Phi for each window</td><td><code>name-ldic.tsv</code></td></tr>
+    </tbody>
+  </table></div>
+  <vox>Notice the pattern: <code>-pre</code> sets the start of the name, and SPAM adds the rest. If you set <code>-pre myrun</code>, you get <code>myrun-registration.tsv</code>.</vox>
+</section>
+<section>
+  <h2>What comes out</h2>
+  <p>This is what a real run printed. It shows your settings first, so read them to check your flags were understood.</p>
+  <div class="term"><span class="c">spam.DIC.registerMultiscale(): working on binning:  4</span>
+Start correlation with Error = 55.52
+	 -&gt; Converged
+<span class="c">spam.DIC.registerMultiscale(): working on binning:  2</span>
+Start correlation with Error = 6.49
+	 -&gt; Converged
+
+<span class="p">Registration converged, great... saving</span></div>
+  <p>The result file is a plain table you can open in a spreadsheet. One row holds a Phi and its report card:</p>
+  <div class="wrap"><table>
+    <thead><tr><th scope="col">Column</th><th scope="col" class="n">Value</th><th scope="col">Meaning</th></tr></thead>
+    <tbody>
+      <tr><th scope="row"><code>Zpos, Ypos, Xpos</code></th><td class="n">119.5, 109.5, 109.5</td><td>Where this Phi is measured</td></tr>
+      <tr><th scope="row"><code>Zdisp, Ydisp, Xdisp</code></th><td class="n">2.88, 16.67, &minus;4.90</td><td>The displacement in voxels</td></tr>
+      <tr><th scope="row"><code>Fzz</code></th><td class="n">0.9796</td><td>Shape change: about 2% shorter in z</td></tr>
+      <tr><th scope="row"><code>error</code></th><td class="n">6.36</td><td>Mismatch left at the end</td></tr>
+      <tr><th scope="row"><code>iterations</code></th><td class="n">7</td><td>Steps at the last level</td></tr>
+      <tr><th scope="row"><code>returnStatus</code></th><td class="n">2</td><td>Converged</td></tr>
+    </tbody>
+  </table></div>
+  <real t="input files">SPAM's tools read TIFF stacks. If your scans are DICOM or another format, convert them first. The order matters: the first image is the one that stays still, and the second is the one being deformed.</real>
+</section>
+<section>
+  <h2>Remember this</h2>
+  <ul class="keys">
+    <li>A command is a tool, some inputs and some flags.</li>
+    <li>Each tool's output file becomes the next tool's input.</li>
+    <li>Always read the settings SPAM prints back to you.</li>
+  </ul>
+</section>
+<script>
+(function () {
+  var P = [["spam-ldic", "tool", "The tool to run. This one does local DVC.", "spam-ldic"], ["unloaded.tif", "file", "First image: the reference. It stays still.", "input 1"], ["loaded.tif", "file", "Second image: the deformed scan.", "input 2"], ["-pf reg-registration.tsv", "flag", "Phi file: the starting guess. Here it comes from spam-reg.", "Lesson 3"], ["-hws 25", "flag", "Half-window size. Each window reaches 25 voxels either side of its node, so it is 51 wide.", "Lesson 3"], ["-ns 50", "flag", "Node spacing: one node every 50 voxels.", "Lesson 3"], ["-mf1 mask.tif", "flag", "Mask file for image 1. Zones equal to 0 are not correlated.", "Lesson 4"], ["-mc 0.5", "flag", "Mask coverage: at least this fraction of a window must be unmasked.", "Lesson 4"], ["-np 4", "flag", "Number of processes: how many workers run at once.", "Lesson 5"], ["-od results", "flag", "Output directory: the folder for the results.", "this lesson"], ["-pre myrun", "flag", "Prefix: the start of the output file names.", "this lesson"]];
+  var t = $("t"), ex = $("ex");
+  t.innerHTML = '<span class="p">$ </span>';
+  P.forEach(function (p, i) {
+    var b = document.createElement("button"); b.type = "button"; b.className = "tok"; var parts = p[0].split(" ");
+    b.innerHTML = parts.length > 1 ? '<span class="fl">' + parts[0] + '</span> <span class="v">' + parts[1] + "</span>" : p[1] === "tool" ? '<span class="p">' + p[0] + "</span>" : '<span class="v">' + p[0] + "</span>";
+    b.addEventListener("click", function () { t.querySelectorAll(".tok").forEach(function (x) { x.classList.remove("on"); }); b.classList.add("on"); ex.innerHTML = '<div class="t"></div><div></div>'; ex.children[0].textContent = p[0] + " · " + p[3]; ex.children[1].textContent = p[2]; });
+    t.appendChild(b); t.appendChild(document.createTextNode(i && i % 3 === 0 ? " \\\n    " : " "));
+  });
+})();
+</script>

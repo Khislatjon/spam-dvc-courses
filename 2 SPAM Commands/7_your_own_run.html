@@ -1,0 +1,200 @@
+<title>Build Your Own Run</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700&family=Nunito:wght@400;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: one column like a storybook, with big hands-on labs. Vox speaks in plain words and a Real SPAM box keeps it honest. */
+:root { --bg: #eef5ff; --panel: #ffffff; --fg: #1d2b4a; --muted: #55638a; --line: #cfdcf2; --sun: #e0a100; --sunbg: #fff3cf; --coral: #e4553c; --mint: #12966f; --blue: #2f6fe0; --soft: #e2ecff;
+  --head: "Baloo 2", "Trebuchet MS", sans-serif; --text: "Nunito", system-ui, sans-serif; --mono: "JetBrains Mono", ui-monospace, Menlo, monospace; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --bg: #131b2e; --panel: #1b2640; --fg: #e9efff; --muted: #a7b5d6; --line: #30405f; --sun: #ffc94d; --sunbg: #3a3218; --coral: #ff8a70; --mint: #54d4ac; --blue: #8db4ff; --soft: #24324f; color-scheme: dark; } }
+:root[data-theme="dark"] { --bg: #131b2e; --panel: #1b2640; --fg: #e9efff; --muted: #a7b5d6; --line: #30405f; --sun: #ffc94d; --sunbg: #3a3218; --coral: #ff8a70; --mint: #54d4ac; --blue: #8db4ff; --soft: #24324f; color-scheme: dark; }
+body { background: var(--bg); color: var(--fg); font-family: var(--text); font-size: 17px; line-height: 1.6; }
+main { max-width: 820px; margin: 0 auto; padding-block: 22px 56px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: grid; gap: 30px; }
+main > *, section > *, .lab > *, .row > * { min-width: 0; }
+.top { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px; font-size: 14.5px; }
+.top a, .next a { color: var(--blue); font-weight: 700; text-decoration: none; }
+.top a:hover, .next a:hover { text-decoration: underline; }
+header { display: grid; gap: 8px; }
+.ep { font-family: var(--mono); font-size: 13px; color: var(--coral); font-weight: 500; }
+h1 { font-family: var(--head); font-weight: 700; font-size: clamp(34px, 7vw, 50px); line-height: 1.05; margin: 0; text-wrap: balance; }
+h2 { font-family: var(--head); font-weight: 700; font-size: 28px; line-height: 1.15; margin: 0; text-wrap: balance; }
+h3 { font-family: var(--head); font-weight: 600; font-size: 20px; margin: 0; }
+p { margin: 0; max-width: 68ch; }
+.lede { font-size: 20px; color: var(--muted); }
+section { display: grid; gap: 14px; }
+.vox { display: grid; grid-template-columns: 74px minmax(0, 1fr); gap: 12px; align-items: start; }
+.vox svg { width: 74px; height: 74px; }
+.say { background: var(--sunbg); border-radius: 14px; padding: 12px 15px; position: relative; }
+.say::before { content: ""; position: absolute; left: -8px; top: 22px; width: 16px; height: 16px; background: var(--sunbg); transform: rotate(45deg); }
+.say .who { font-family: var(--head); font-weight: 700; color: var(--sun); display: block; font-size: 15px; }
+.real { background: var(--soft); border-radius: 10px; padding: 12px 15px; font-size: 15.5px; display: grid; gap: 6px; }
+.real .t { font-family: var(--mono); font-size: 12.5px; color: var(--blue); font-weight: 500; }
+.lab { background: var(--panel); border: 2px solid var(--line); border-radius: 14px; padding: 15px; display: grid; gap: 12px; }
+.row { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px; }
+.tile { display: grid; gap: 4px; font-size: 14px; color: var(--muted); }
+canvas { display: block; width: 100%; border-radius: 6px; }
+canvas.px { image-rendering: pixelated; background: #000; touch-action: none; }
+video { width: 100%; border-radius: 10px; background: #000; display: block; }
+.ctrl { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+button { font: inherit; font-weight: 700; font-size: 15px; color: var(--fg); background: var(--soft); border: 2px solid var(--line); border-radius: 10px; padding: 7px 13px; cursor: pointer; }
+button:hover { border-color: var(--blue); }
+button[aria-pressed="true"], button.go { background: var(--blue); color: var(--panel); border-color: var(--blue); }
+button:focus-visible, input:focus-visible { outline: 3px solid var(--sun); outline-offset: 2px; }
+label.s { display: grid; grid-template-columns: minmax(120px, 170px) minmax(0, 1fr) 62px; gap: 10px; align-items: center; font-size: 15px; }
+label.s output { font-family: var(--mono); font-size: 14px; text-align: right; }
+input[type=range] { width: 100%; accent-color: var(--blue); }
+.nums { display: grid; grid-template-columns: repeat(auto-fit, minmax(135px, 1fr)); gap: 8px; }
+.num { background: var(--soft); border-radius: 8px; padding: 7px 10px; font-size: 13.5px; color: var(--muted); }
+.num span { display: block; font-family: var(--mono); font-size: 18px; color: var(--fg); font-weight: 500; }
+.f { font-family: var(--mono); font-size: 14.5px; overflow-x: auto; background: var(--soft); padding: 9px 12px; border-radius: 8px; white-space: nowrap; }
+code { font-family: var(--mono); font-size: 0.88em; }
+.wrap { overflow-x: auto; border: 2px solid var(--line); border-radius: 10px; background: var(--panel); }
+table { border-collapse: collapse; width: 100%; font-size: 15px; }
+th, td { padding: 8px 12px; text-align: left; border-bottom: 1px solid var(--line); vertical-align: top; }
+tbody tr:last-child th, tbody tr:last-child td { border-bottom: 0; }
+thead th { font-size: 13.5px; color: var(--muted); }
+td.n, th.n { text-align: right; font-family: var(--mono); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.good { color: var(--mint); font-weight: 800; } .bad { color: var(--coral); font-weight: 800; }
+.msg { font-family: var(--head); font-size: 19px; color: var(--mint); min-height: 1.6em; }
+.next { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 10px; border-top: 2px solid var(--line); padding-top: 14px; }
+ul.keys { margin: 0; padding-left: 20px; display: grid; gap: 6px; max-width: 68ch; }
+.quiz { display: grid; gap: 8px; }
+.quiz button { text-align: left; font-weight: 600; }
+.quiz button.right { background: var(--mint); color: var(--panel); border-color: var(--mint); } .quiz button.wrong { background: var(--coral); color: var(--panel); border-color: var(--coral); }
+.map { display: grid; gap: 12px; }
+.stop { display: grid; grid-template-columns: 52px minmax(0, 1fr) auto; gap: 12px; align-items: center; background: var(--panel); border: 2px solid var(--line); border-radius: 14px; padding: 12px 14px; text-decoration: none; color: var(--fg); }
+.stop:hover { border-color: var(--blue); }
+.stop .d { font-family: var(--head); font-weight: 700; font-size: 25px; width: 46px; height: 46px; display: grid; place-items: center; border-radius: 50%; background: var(--sunbg); color: var(--sun); }
+.stop b { font-family: var(--head); font-size: 20px; display: block; line-height: 1.2; } .stop span.m { font-size: 15px; color: var(--muted); } .stop .t { font-family: var(--mono); font-size: 13px; color: var(--muted); }
+@media (max-width: 520px) { label.s { grid-template-columns: minmax(0, 1fr) 62px; } label.s input { grid-column: 1 / -1; grid-row: 2; } .stop { grid-template-columns: 46px minmax(0, 1fr); } .stop .t { display: none; } }
+.term { background: #111827; color: #e7ecf5; border-radius: 10px; padding: 12px 14px; font-family: var(--mono); font-size: 14px; line-height: 1.7; overflow-x: auto; white-space: pre; }
+.term .p { color: #6ee7b7; } .term .fl { color: #ffd166; font-weight: 500; } .term .v { color: #8db4ff; } .term .c { color: #94a3b8; } .term .e { color: #fca5a5; }
+.tok { cursor: pointer; border-radius: 4px; padding: 1px 3px; background: rgba(255, 255, 255, .08); border: 0; font: inherit; color: inherit; }
+.tok:hover, .tok.on { background: #ffd166; color: #111827; }
+.pick { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.pick .l { font-size: 15px; min-width: 110px; font-weight: 700; }
+.note { font-size: 14.5px; color: var(--muted); }
+select { font: inherit; color: var(--fg); background: var(--soft); border: 2px solid var(--line); border-radius: 8px; padding: 5px 8px; }
+</style>
+<main>
+<nav class="top"><span><a href="START HERE.html">&larr; Course map</a> &middot; <a href="../START%20HERE.html">All courses</a></span><span>Lesson 7 of 7</span></nav>
+<header>
+  <div class="ep">Lesson 7</div>
+  <h1>Build Your Own Run</h1>
+  <p class="lede">Put it all together: build the commands, fix what goes wrong, and test yourself.</p>
+</header>
+<section>
+  <h2>Command builder</h2>
+  <p>Answer the questions, and your commands appear below. They're a starting point, so check the results on your own scans.</p>
+  <div class="lab">
+    <div class="row">
+      <label class="tile">Unloaded scan<input id="u" type="text" value="unloaded.tif" style="font:inherit;padding:6px;border:2px solid var(--line);border-radius:8px;background:var(--soft);color:var(--fg)"></label>
+      <label class="tile">Loaded scan<input id="l" type="text" value="loaded.tif" style="font:inherit;padding:6px;border:2px solid var(--line);border-radius:8px;background:var(--soft);color:var(--fg)"></label>
+      <label class="tile">Run name<input id="n" type="text" value="myrun" style="font:inherit;padding:6px;border:2px solid var(--line);border-radius:8px;background:var(--soft);color:var(--fg)"></label>
+    </div>
+    <div class="row">
+      <label class="tile">How far does it move overall?<select id="mv"><option value="4">Up to about 30 voxels</option><option value="2">Just a few voxels</option><option value="8">More than that</option></select></label>
+      <label class="tile">Have a mask?<select id="mk"><option value="1">Yes: mask.tif</option><option value="0">No</option></select></label>
+      <label class="tile">Large local movement?<select id="ps"><option value="0">No</option><option value="1">Yes: use pixel search</option></select></label>
+    </div>
+    <label class="s">Half-window<input id="h" type="range" min="5" max="40" step="1" value="25"><output></output></label>
+    <label class="s">Node spacing<input id="s" type="range" min="10" max="100" step="2" value="50"><output></output></label>
+    <label class="s">Workers<input id="w" type="range" min="1" max="16" step="1" value="4"><output></output></label>
+    <div class="term" id="out"></div>
+    <div class="ctrl"><button id="copy" type="button">Copy commands</button><span id="c1" class="note" aria-live="polite"></span></div>
+    <p id="warn" class="note"></p>
+  </div>
+</section>
+<section>
+  <h2>Fix-it guide</h2>
+  <div class="wrap"><table>
+    <thead><tr><th scope="col">What you see</th><th scope="col">Likely cause</th><th scope="col">Try</th></tr></thead>
+    <tbody>
+      <tr><th scope="row">Registration status 1</th><td>Started too sharp</td><td>A higher <code>-bb</code></td></tr>
+      <tr><th scope="row">Almost no nodes converge</th><td>Missing or poor first guess</td><td>Check <code>-pf</code></td></tr>
+      <tr><th scope="row">Many fail in one region</th><td>Large local movement</td><td>Pixel search with <code>-sr</code></td></tr>
+      <tr><th scope="row">Many fail across the sample</th><td>Windows too small</td><td>A larger <code>-hws</code></td></tr>
+      <tr><th scope="row">Field looks too smooth</th><td>Windows too large</td><td>A smaller <code>-hws</code></td></tr>
+      <tr><th scope="row">Lots of time spent on air</th><td>No mask, or <code>-glt</code> too low</td><td><code>-mf1</code>, or check air's grey value</td></tr>
+      <tr><th scope="row">Lost nodes near the surface</th><td><code>-mc</code> too high</td><td>Lower it towards 0.5</td></tr>
+      <tr><th scope="row">No results file, no crash</th><td>Node spacing clash</td><td>Read the output, and check <code>-pfb</code></td></tr>
+      <tr><th scope="row">Nodes in only one corner</th><td>Missing <code>-pfb</code> and <code>-ns</code></td><td>Add both</td></tr>
+      <tr><th scope="row">Laptop very hot</th><td>Too many workers</td><td>A lower <code>-np</code></td></tr>
+    </tbody>
+  </table></div>
+</section>
+<section>
+  <h2>Cheat sheet</h2>
+  <div class="wrap"><table>
+    <thead><tr><th scope="col">Flag</th><th scope="col">Used by</th><th scope="col">Meaning</th></tr></thead>
+    <tbody>
+      <tr><th scope="row"><code>-bb</code>, <code>-be</code></th><td><code>spam-reg</code></td><td>Binning to begin and end with</td></tr>
+      <tr><th scope="row"><code>-pf</code></th><td>All</td><td>File holding the first guess</td></tr>
+      <tr><th scope="row"><code>-pfb</code></th><td>All</td><td>New size &divide; size of the file's images</td></tr>
+      <tr><th scope="row"><code>-hws</code></th><td><code>ldic</code>, search</td><td>Half-window size</td></tr>
+      <tr><th scope="row"><code>-ns</code></th><td><code>ldic</code>, search</td><td>Node spacing</td></tr>
+      <tr><th scope="row"><code>-sr</code></th><td>Search</td><td>Range: z min, z max, y min, y max, x min, x max</td></tr>
+      <tr><th scope="row"><code>-mf1</code></th><td>All</td><td>Mask for image 1</td></tr>
+      <tr><th scope="row"><code>-mc</code></th><td><code>ldic</code>, search</td><td>Fraction of a window that must be unmasked</td></tr>
+      <tr><th scope="row"><code>-glt</code></th><td><code>ldic</code>, search</td><td>Skip windows darker than this</td></tr>
+      <tr><th scope="row"><code>-np</code></th><td><code>ldic</code>, search</td><td>Number of workers</td></tr>
+      <tr><th scope="row"><code>-od</code>, <code>-pre</code></th><td>All</td><td>Output folder, and start of file names</td></tr>
+    </tbody>
+  </table></div>
+</section>
+<section>
+  <h2>Final quiz</h2>
+  <div id="quiz" class="quiz"></div>
+  <div class="msg" id="score" aria-live="polite"></div>
+</section>
+<section>
+  <h2>You did it</h2>
+  <div class="vox"><svg viewBox="0 0 74 74" aria-hidden="true"><path d="M37 6 67 21 37 36 7 21Z" fill="#ffd166"/><path d="M7 21 37 36V68L7 53Z" fill="#f4a72c"/><path d="M67 21 37 36V68L67 53Z" fill="#e58a1f"/><circle cx="19" cy="38" r="5.5" fill="#fff"/><circle cx="30" cy="44" r="5.5" fill="#fff"/><circle cx="20" cy="38.5" r="2.6" fill="#1d2b4a"/><circle cx="31" cy="44.5" r="2.6" fill="#1d2b4a"/><path d="M18 50q6 6 12 5" fill="none" stroke="#1d2b4a" stroke-width="2.4" stroke-linecap="round"/><circle cx="52" cy="40" r="8" fill="none" stroke="#1d2b4a" stroke-width="3"/><path d="M47 47l-6 8" stroke="#1d2b4a" stroke-width="3.5" stroke-linecap="round"/></svg><div class="say"><span class="who">Vox says</span>You can now read a SPAM command and predict what it will do. Try it on your own scans, starting small: test one sample, check the status and node map, then change one flag at a time.</div></div>
+</section>
+
+
+<nav class="next"><a href="6_pixel_search.html">&larr; Pixel Search Flags</a><a href="../START%20HERE.html">Finish: back to all courses &rarr;</a></nav>
+</main>
+<script>
+// Small browser helpers shared by the lessons.
+var $ = function (i) { return document.getElementById(i); };
+function cssv(n) { return getComputedStyle(document.documentElement).getPropertyValue(n).trim(); }
+// Canvases can hold more pixels than logical voxels (data-s), so images stay sharp when enlarged.
+function paint(c, fn) { var s = +c.dataset.s || 1, x = c.getContext("2d"), w = c.width, h = c.height, d = x.createImageData(w, h); for (var j = 0; j < h; j++) for (var i = 0; i < w; i++) { var v = fn(i / s, j / s), k = 4 * (j * w + i); d.data[k] = v[0]; d.data[k + 1] = v[1]; d.data[k + 2] = v[2]; d.data[k + 3] = 255; } x.putImageData(d, 0, 0); }
+function ctxOf(c) { var s = +c.dataset.s || 1, x = c.getContext("2d"); x.setTransform(s, 0, 0, s, 0, 0); return x; }
+function sheet(w, h, s) { var c = document.createElement("canvas"); c.width = w * s; c.height = h * s; c.dataset.s = s; return c; }
+function gray(v) { v = Math.max(0, Math.min(255, v)); return [v, v, v]; }
+var VIR = [[68, 1, 84], [59, 82, 139], [33, 145, 140], [94, 201, 98], [253, 231, 37]];
+function viridis(t) { t = Math.max(0, Math.min(.999, t)) * 4; var k = Math.floor(t), f = t - k; return [0, 1, 2].map(function (c) { return VIR[k][c] + (VIR[k + 1][c] - VIR[k][c]) * f; }); }
+function fmt(v, d) { return (v < 0 ? "\u2212" : "") + Math.abs(v).toFixed(d === undefined ? 2 : d); }
+function fitCanvas(c, h) { var r = window.devicePixelRatio || 1, w = c.clientWidth || 640; c.width = Math.round(w * r); c.height = Math.round(h * r); var x = c.getContext("2d"); x.setTransform(r, 0, 0, r, 0, 0); return { x: x, w: w, h: h }; }
+function plot(c, h, series, opt) {
+  opt = opt || {}; var g = fitCanvas(c, h), x = g.x, L = 46, R = 12, T = 12, B = 30, W = g.w - L - R, H = h - T - B;
+  var xs = opt.x || [0, 1], ys = opt.y || [0, 1], px = function (v) { return L + (v - xs[0]) / (xs[1] - xs[0]) * W; }, py = function (v) { return T + H - (v - ys[0]) / (ys[1] - ys[0]) * H; };
+  x.clearRect(0, 0, g.w, h); x.strokeStyle = cssv("--line"); x.lineWidth = 1; x.strokeRect(L, T, W, H); x.fillStyle = cssv("--muted"); x.font = "12px " + cssv("--mono");
+  x.textAlign = "center"; (opt.xt || []).forEach(function (t) { x.fillText(String(t), px(t), h - 12); }); x.textAlign = "right"; (opt.yt || []).forEach(function (t) { x.fillText(String(t), L - 6, py(t) + 4); });
+  series.forEach(function (s) { x.strokeStyle = s.color; x.lineWidth = s.w || 2.5; x.beginPath(); s.d.forEach(function (p, i) { var a = px(p[0]), b = py(p[1]); if (i) x.lineTo(a, b); else x.moveTo(a, b); }); x.stroke(); });
+  if (opt.legend) { x.font = "600 13px " + cssv("--text"); x.textAlign = "left"; var lx = L + 12; opt.legend.forEach(function (e) { x.strokeStyle = e[0]; x.lineWidth = 3.5; x.beginPath(); x.moveTo(lx, T + 16); x.lineTo(lx + 22, T + 16); x.stroke(); x.fillStyle = cssv("--fg"); x.fillText(e[1], lx + 28, T + 20); lx += 28 + x.measureText(e[1]).width + 20; }); }
+  (opt.dots || []).forEach(function (d) { x.fillStyle = d.color; x.beginPath(); x.arc(px(d.x), py(d.y), d.r || 6, 0, 7); x.fill(); });
+  return { x: x, px: px, py: py };
+}
+
+var REG=[{"bb": 1, "be": 1, "time": 9.6, "status": 1, "error": 56.11, "iters": 50, "Y": 5.05, "err_t": 16.49, "Fzz": 0.9854}, {"bb": 2, "be": 2, "time": 1.8, "status": 1, "error": 34.72, "iters": 50, "Y": 11.68, "err_t": 9.53, "Fzz": 0.9799}, {"bb": 4, "be": 2, "time": 0.9, "status": 2, "error": 6.36, "iters": 7, "Y": 16.67, "err_t": 4.62, "Fzz": 0.9796}, {"bb": 4, "be": 1, "time": 2.4, "status": 2, "error": 7.34, "iters": 8, "Y": 16.6, "err_t": 4.69, "Fzz": 0.9799}, {"bb": 8, "be": 2, "time": 0.9, "status": 2, "error": 6.36, "iters": 7, "Y": 16.67, "err_t": 4.62, "Fzz": 0.9796}, {"bb": 8, "be": 1, "time": 2.3, "status": 2, "error": 7.34, "iters": 8, "Y": 16.6, "err_t": 4.69, "Fzz": 0.9799}, {"bb": 16, "be": 2, "time": 0.9, "status": 2, "error": 6.36, "iters": 7, "Y": 16.67, "err_t": 4.62, "Fzz": 0.9796}];var GRID=[{"nodes": 576, "tried": 385, "conv": 301, "limit": 36, "failed": 48, "skipped": 191, "rms": 0.607, "rms_conv": 0.203, "wrong": 8, "its": 4673, "ns": 25, "hws": 5, "time": 1.2}, {"nodes": 576, "tried": 381, "conv": 353, "limit": 12, "failed": 16, "skipped": 195, "rms": 0.509, "rms_conv": 0.208, "wrong": 3, "its": 2935, "ns": 25, "hws": 10, "time": 1.6}, {"nodes": 576, "tried": 372, "conv": 364, "limit": 6, "failed": 2, "skipped": 204, "rms": 0.851, "rms_conv": 0.235, "wrong": 4, "its": 2561, "ns": 25, "hws": 15, "time": 2.6}, {"nodes": 576, "tried": 347, "conv": 346, "limit": 1, "failed": 0, "skipped": 229, "rms": 0.501, "rms_conv": 0.475, "wrong": 4, "its": 2362, "ns": 25, "hws": 25, "time": 7.2}, {"nodes": 576, "tried": 295, "conv": 295, "limit": 0, "failed": 0, "skipped": 281, "rms": 1.238, "rms_conv": 1.238, "wrong": 21, "its": 2504, "ns": 25, "hws": 40, "time": 25.3}, {"nodes": 64, "tried": 44, "conv": 36, "limit": 3, "failed": 5, "skipped": 20, "rms": 0.468, "rms_conv": 0.213, "wrong": 1, "its": 452, "ns": 50, "hws": 5, "time": 0.9}, {"nodes": 64, "tried": 44, "conv": 41, "limit": 1, "failed": 2, "skipped": 20, "rms": 0.299, "rms_conv": 0.203, "wrong": 0, "its": 301, "ns": 50, "hws": 10, "time": 0.8}, {"nodes": 64, "tried": 44, "conv": 43, "limit": 1, "failed": 0, "skipped": 20, "rms": 0.394, "rms_conv": 0.267, "wrong": 0, "its": 280, "ns": 50, "hws": 15, "time": 0.9}, {"nodes": 64, "tried": 44, "conv": 44, "limit": 0, "failed": 0, "skipped": 20, "rms": 0.613, "rms_conv": 0.613, "wrong": 1, "its": 281, "ns": 50, "hws": 25, "time": 1.5}, {"nodes": 64, "tried": 35, "conv": 35, "limit": 0, "failed": 0, "skipped": 29, "rms": 1.344, "rms_conv": 1.344, "wrong": 3, "its": 284, "ns": 50, "hws": 40, "time": 3.7}];var NOPF={"nodes": 64, "tried": 44, "conv": 0, "limit": 42, "failed": 2, "skipped": 20, "rms": 18.756, "rms_conv": null, "wrong": 42, "its": 2164, "time": 5.4};var MASK=[{"nodes": 64, "tried": 64, "conv": 54, "limit": 10, "failed": 0, "skipped": 0, "rms": 1.667, "rms_conv": 0.667, "wrong": 12, "its": 1031, "mc": null, "time": 3.5}, {"nodes": 64, "tried": 64, "conv": 59, "limit": 1, "failed": 4, "skipped": 0, "rms": 0.996, "rms_conv": 0.91, "wrong": 4, "its": 498, "mc": 0, "time": 2.1}, {"nodes": 64, "tried": 52, "conv": 52, "limit": 0, "failed": 0, "skipped": 12, "rms": 0.725, "rms_conv": 0.725, "wrong": 2, "its": 376, "mc": 0.25, "time": 1.8}, {"nodes": 64, "tried": 44, "conv": 44, "limit": 0, "failed": 0, "skipped": 20, "rms": 0.613, "rms_conv": 0.613, "wrong": 1, "its": 281, "mc": 0.5, "time": 1.5}, {"nodes": 64, "tried": 32, "conv": 32, "limit": 0, "failed": 0, "skipped": 32, "rms": 0.625, "rms_conv": 0.625, "wrong": 1, "its": 198, "mc": 0.75, "time": 1.3}, {"nodes": 64, "tried": 24, "conv": 24, "limit": 0, "failed": 0, "skipped": 40, "rms": 0.72, "rms_conv": 0.72, "wrong": 1, "its": 161, "mc": 1, "time": 1.2}];var NP=[{"np": 1, "time": 24.3}, {"np": 2, "time": 13.3}, {"np": 4, "time": 7.0}, {"np": 6, "time": 5.8}];var NODEMAP={"none": [[50, 50, 2, 0.1], [50, 100, 2, 0.1], [50, 150, 2, 0.3], [50, 200, 2, 0.5], [100, 50, 2, 0.2], [100, 100, 2, 1.0], [100, 150, 1, 23.6], [100, 200, 1, 14.1], [150, 50, 2, 0.2], [150, 100, 2, 0.7], [150, 150, 1, 3.1], [150, 200, 1, 10.8], [200, 50, 2, 0.1], [200, 100, 2, 0.2], [200, 150, 2, 0.1], [200, 200, 2, 0.4]], "search": [[50, 50, 2, 0.1], [50, 100, 2, 0.1], [50, 150, 2, 0.4], [50, 200, -7, null], [100, 50, 2, 0.2], [100, 100, 2, 1.0], [100, 150, 2, 3.6], [100, 200, -7, null], [150, 50, 2, 0.2], [150, 100, 2, 0.8], [150, 150, 2, 2.8], [150, 200, -7, null], [200, 50, 2, 0.1], [200, 100, 2, 0.2], [200, 150, 2, 0.1], [200, 200, -7, null]]};var DATA0={"tried": 44, "conv": 40, "limit": 4, "rms": 4.5, "wrong": 4, "its": 594, "name": "No search", "time": 2.2, "positions": 0, "t_search": 0};var DATA1=[{"tried": 40, "conv": 39, "limit": 1, "rms": 0.79, "wrong": 2, "its": 370, "name": "Too small", "sr": [-3, 3, -3, 3, -3, 3], "t_search": 0.8, "t_dvc": 1.7, "positions": 343}, {"tried": 40, "conv": 40, "limit": 0, "rms": 0.85, "wrong": 2, "its": 307, "name": "About right", "sr": [-5, 5, -18, 18, -5, 5], "t_search": 1.3, "t_dvc": 1.6, "positions": 4477}, {"tried": 40, "conv": 40, "limit": 0, "rms": 0.85, "wrong": 2, "its": 307, "name": "Too wide", "sr": [-40, 40, -40, 40, -40, 40], "t_search": 60.3, "t_dvc": 1.6, "positions": 531441}];
+</script>
+<script>
+(function () {
+  var ids = ["u", "l", "n", "mv", "mk", "ps", "h", "s", "w"];
+  function draw() {
+    var u = $("u").value || "unloaded.tif", l = $("l").value || "loaded.tif", n = $("n").value || "myrun", bb = +$("mv").value, mk = +$("mk").value, ps = +$("ps").value, h = +$("h").value, s = +$("s").value, w = +$("w").value;
+    $("h").nextElementSibling.textContent = h; $("s").nextElementSibling.textContent = s; $("w").nextElementSibling.textContent = w;
+    var mf = mk ? " -mf1 mask.tif" : "", mc = mk ? " -mc 0.5" : "", be = bb === 2 ? 2 : 2, L = ["spam-reg " + u + " " + l + mf + " -bb " + bb + " -be " + be + " -pre " + n];
+    if (ps) { L.push("# First make half-size copies of your images: u2.tif, l2.tif" + (mk ? " and m2.tif" : "")); L.push("spam-pixelSearch u2.tif l2.tif" + (mk ? " -mf1 m2.tif -mc 0.5" : "") + " -pf " + n + "-registration.tsv -pfb 0.5 -sr -5 5 -18 18 -5 5 -ns " + Math.round(s / 2) + " -hws " + Math.floor(h / 2) + " -np " + w + " -pre " + n + "_ps"); L.push("spam-ldic " + u + " " + l + mf + mc + " -pf " + n + "_ps-pixelSearch.tsv -pfb 2 -ns " + (Math.round(s / 2) * 2) + " -hws " + h + " -np " + w + " -pre " + n); }
+    else L.push("spam-ldic " + u + " " + l + mf + mc + " -pf " + n + "-registration.tsv -ns " + s + " -hws " + h + " -np " + w + " -pre " + n);
+    var o = $("out"); o.textContent = ""; L.forEach(function (t, i) { var e = document.createElement("div"); e.textContent = (t[0] === "#" ? "" : "$ ") + t; if (t[0] === "#") e.className = "c"; o.appendChild(e); }); o.dataset.text = L.join("\n");
+    var msgs = []; if (s < 2 * h + 1) msgs.push("Your windows overlap, so neighbouring nodes share voxels."); if (ps) msgs.push("Set -sr from your own sample. The range shown is only an example."); if (!mk) msgs.push("With no mask, consider -glt, after checking the grey value of air."); $("warn").textContent = msgs.join(" ");
+  }
+  ids.forEach(function (i) { $(i).addEventListener("input", draw); }); draw();
+  $("copy").addEventListener("click", function () { var t = $("out").dataset.text; navigator.clipboard.writeText(t).then(function () { $("c1").textContent = "Copied."; }, function () { var r = document.createRange(); r.selectNodeContents($("out")); var s = getSelection(); s.removeAllRanges(); s.addRange(r); $("c1").textContent = "Selected. Press copy on your keyboard."; }); });
+  var Q = [["In -hws 25, how wide is the window?", ["25 voxels", "50 voxels", "51 voxels"], 2, "Width = 2 \u00d7 25 + 1 = 51."], ["What does -bb 4 -be 2 mean?", ["Start at bin 4, finish at bin 2", "Run 4 times, then 2 times", "Use 4 cores, then 2"], 0, "It goes from blurry to sharper."], ["You forgot -pf on a sample that moved 15 voxels. What happens?", ["SPAM stops with an error", "It runs, but results are poor", "It works fine"], 1, "In our test, 0 of 44 windows converged."], ["-mc 0.75 means...", ["At least 75% of a window must be unmasked", "75% of nodes are skipped", "The mask is 75% of the scan"], 0, "Windows below that are skipped with status \u22125."], ["Does -np change the answer?", ["Yes", "No, only the speed", "Only with a mask"], 1, "It only changes how many workers run at once."], ["Your Phi file came from half-size images, and you're now on full size. What's -pfb?", ["0.5", "1", "2"], 2, "New size \u00f7 old size = 2."], ["-sr has how many numbers?", ["3", "6", "12"], 1, "Min and max for z, y and x."], ["Why not just use a huge -sr?", ["It's slow and allows false matches", "It breaks the mask", "It changes the voxel size"], 0, "In our test, it took 60 s for the same answer as 1.3 s."], ["You see no results file and no crash. What's first?", ["Buy more memory", "Read the printed output", "Delete the mask"], 1, "SPAM prints a helpful message, even when it exits normally."]], box = $("quiz"), right = 0, seen = 0;
+  Q.forEach(function (q, i) { var w = document.createElement("div"); w.className = "lab"; var h = document.createElement("h3"); h.textContent = (i + 1) + ". " + q[0]; w.appendChild(h); var res = document.createElement("p"); q[1].forEach(function (a, k) { var b = document.createElement("button"); b.type = "button"; b.textContent = a; b.addEventListener("click", function () { if (w.dataset.done) return; w.dataset.done = 1; seen++; if (k === q[2]) { right++; b.className = "right"; res.textContent = "Yes! " + q[3]; } else { b.className = "wrong"; w.querySelectorAll("button")[q[2]].className = "right"; res.textContent = "Not quite. " + q[3]; } if (seen === Q.length) $("score").textContent = "You scored " + right + " out of " + Q.length + "."; }); w.appendChild(b); }); w.appendChild(res); box.appendChild(w); });
+})();
+</script>

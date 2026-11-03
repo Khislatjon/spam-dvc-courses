@@ -1,0 +1,82 @@
+<header>
+  <div class="ep">Lesson 5</div>
+  <h1>The Blurry Glasses</h1>
+  <p class="lede">How does SPAM get a good first guess when the bone may have moved a long way?</p>
+</header>
+<section>
+  <h2>Squint at the picture</h2>
+  <vox>Find a friend across a crowded room. You don't start by reading their shirt buttons! First you look for a tall shape in a red coat. Then you walk closer and check their face. SPAM does the same. It starts with a blurry scan to get the big picture right, then uses sharper scans for the details.</vox>
+  <p>Blurring here is called <b>binning</b>. Bin 2 means every 2 &times; 2 &times; 2 block of voxels is averaged into one big voxel. The scan gets 8 times smaller, so it's faster too.</p>
+  <div class="lab">
+    <div class="row">
+      <div class="tile"><canvas id="b1" width="387" height="387" data-s="3"></canvas>Bin 1: every detail</div>
+      <div class="tile"><canvas class="px" id="b2" width="65" height="65"></canvas>Bin 2</div>
+      <div class="tile"><canvas class="px" id="b4" width="33" height="33"></canvas>Bin 4</div>
+      <div class="tile"><canvas class="px" id="b8" width="17" height="17"></canvas>Bin 8: only broad shapes</div>
+    </div>
+    <p>These images are made up. The next chart shows why blur helps. Each line is the error as the window slides.</p>
+    <canvas id="p" role="img" aria-label="Error against shift at different binning levels"></canvas>
+    <p>Blurring removes the small bumps in the landscape, leaving a smooth valley that leads toward the answer. In a sharp image, the small dips can trap the hiker.</p>
+  </div>
+</section>
+<section>
+  <h2>Climb down the ladder</h2>
+  <p>The true movement here is 22 voxels in x and &minus;16 in y, which is too far for the hiker to reach directly at full detail. Try it both ways.</p>
+  <div class="lab">
+    <div class="ctrl"><button id="d" type="button">Go straight to sharp</button><button id="l" class="go" type="button">Use the ladder</button></div>
+    <div class="row">
+      <div class="tile"><canvas id="v" width="387" height="387" data-s="3"></canvas><span id="vt">Loaded window at the current guess</span></div>
+      <div class="tile"><canvas id="r" width="387" height="387" data-s="3"></canvas>Unloaded window: the target</div>
+    </div>
+    <div class="wrap"><table id="t" aria-label="Results of each step"></table></div>
+    <div class="msg" id="m" aria-live="polite"></div>
+  </div>
+  <vox>Each rung passes its answer to the next one. When we go from bin 8 to bin 4, one big voxel becomes two smaller ones, so the displacement must be doubled. Then the sharper rung only has to fix a small mistake, which is easy for the hiker.</vox>
+</section>
+<section>
+  <h2>This is registration</h2>
+  <p>Registration finds <b>one Phi for the whole scan</b>. It gets the big movement right: the slide, the turn and the overall squash. That answer becomes the starting guess for every window.</p>
+  <real t="spam/DIC/registration.py, registerMultiscale()">The function starts at <code>binStart</code>, runs <code>register</code>, passes Phi down, and stops at <code>binStop</code>. For example, <code>spam-reg -bb 4 -be 2</code> begins at bin 4 and ends at bin 2. <code>spam.DIC.binning</code> averages neighbouring voxels, and <code>PhiInitBinRatio</code> rescales the translation between levels. Only t is rescaled, because F has no units.</real>
+  <vox>One Phi works well when a sample moves fairly evenly. If part of it collapses or fractures, one Phi can't describe that, and registration may not fully settle. That kind of sample needs more help, which is Lesson 7.</vox>
+</section>
+<section>
+  <h2>Remember this</h2>
+  <ul class="keys">
+    <li>Binning means averaging voxels. It's blurrier, smaller and faster.</li>
+    <li>Blur smooths the error landscape, so the hiker can travel further.</li>
+    <li>Registration goes from coarse to fine, and gives one Phi for the whole scan.</li>
+    <li>That Phi is the first guess for all the windows.</li>
+  </ul>
+</section>
+<script>
+(function () {
+  var t = [22, -16], f = rich, g = function (x, y) { return rich(x - t[0], y - t[1]); }, H = 64;
+  var img = function (n) { return n === 1 ? f : binned(f, n); }, lo = function (n) { return n === 1 ? g : binned(g, n); };
+  var sc = function (v) { return gray((v - 40) * 1.05); };
+  [1, 2, 4, 8].forEach(function (n) { var c = $("b" + n), I = img(n), h = Math.floor(c.width / (+c.dataset.s || 1) / 2); paint(c, function (i, j) { return sc(I(i - h, j - h)); }); });
+  function curves() {
+    var s = [[1, "--blue"], [8, "--coral"]].map(function (q) {
+      var n = q[0], a = img(n), b = lo(n), d = [], mx = 0, HH = Math.round(H / n);
+      for (var k = -40; k <= 70; k += 2) { var e = compare(a, b, k / n, t[1] / n, HH, n === 1 ? 2 : 1).error; d.push([k, e]); if (e > mx) mx = e; }
+      return { color: cssv(q[1]), d: d.map(function (p) { return [p[0], p[1] / mx]; }) };
+    });
+    plot($("p"), 210, s, { x: [-40, 70], y: [0, 1.18], xt: [-40, -20, 0, 22, 40, 70], legend: [[cssv("--blue"), "Sharp (bin 1)"], [cssv("--coral"), "Blurred (bin 8)"]] });
+  }
+  var timer, table = $("t");
+  function setRows(rows) { table.innerHTML = "<thead><tr><th>Step</th><th class=n>Iterations</th><th class=n>Status</th><th class=n>Guess (vx)</th><th class=n>Error</th></tr></thead><tbody>" + rows.join("") + "</tbody>"; }
+  function show(u) { paint($("v"), function (i, j) { return sc(g(i - 64 + u[0], j - 64 + u[1])); }); }
+  paint($("r"), function (i, j) { return sc(f(i - 64, j - 64)); });
+  function play(levels) {
+    clearInterval(timer); var cur = [0, 0], rows = [], L = 0; show(cur); setRows([]); $("m").textContent = ""; $("m").style.color = "";
+    timer = setInterval(function () {
+      if (L >= levels.length) { clearInterval(timer); var ok = Math.hypot(cur[0] - t[0], cur[1] - t[1]) < 1; $("m").textContent = ok ? "Found the true movement." : "Stuck in a small dip, far from the true movement."; $("m").style.color = ok ? "" : "var(--coral)"; return; }
+      var n = levels[L], o = makeOperator(img(n), Math.round(H / n), n === 1 ? 2 : 1), r = register(o, lo(n), [cur[0] / n, cur[1] / n], 50);
+      cur = [r.u[0] * n, r.u[1] * n]; show(cur);
+      rows.push("<tr><th>Bin " + n + "</th><td class=n>" + (r.path.length - 1) + "</td><td class=n>" + r.status + "</td><td class=n>(" + fmt(cur[0], 1) + ", " + fmt(cur[1], 1) + ")</td><td class=n>" + r.path[r.path.length - 1].error.toFixed(2) + "</td></tr>"); setRows(rows); L++;
+    }, 800);
+  }
+  $("d").addEventListener("click", function () { play([1]); });
+  $("l").addEventListener("click", function () { play([8, 4, 2, 1]); });
+  show([0, 0]); setRows([]); curves(); addEventListener("resize", curves);
+})();
+</script>

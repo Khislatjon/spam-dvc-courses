@@ -1,0 +1,100 @@
+<header>
+  <div class="ep">Lesson 8</div>
+  <h1>The Whole Film</h1>
+  <p class="lede">Now watch every piece work together on one bone, from raw scans to a finished field.</p>
+</header>
+<section>
+  <h2>Press play</h2>
+  <div class="lab">
+    <canvas id="c" width="720" height="480" data-s="2" role="img" aria-label="Animated walk through the full SPAM DVC pipeline"></canvas>
+    <div class="msg" id="cap" aria-live="polite"></div>
+    <p id="sub"></p>
+    <div class="ctrl"><button id="play" class="go" type="button">Play the film</button><button id="prev" type="button">Previous scene</button><button id="next" type="button">Next scene</button></div>
+    <p>A made-up 2D bone, using the same calculation as the earlier labs. Arrows are drawn 3 times longer than the real movement.</p>
+  </div>
+</section>
+<section>
+  <h2>The full recipe</h2>
+  <div class="wrap"><table>
+    <thead><tr><th scope="col" class="n">Step</th><th scope="col">What happens</th><th scope="col">Tool</th><th scope="col">Lesson</th></tr></thead>
+    <tbody>
+      <tr><td class="n">1</td><td>Make a mask so air is skipped</td><td>A mask you prepare</td><td class="n">6</td></tr>
+      <tr><td class="n">2</td><td>Find one Phi for the whole scan, going blurry to sharp</td><td><code>spam-reg</code></td><td class="n">5</td></tr>
+      <tr><td class="n">3</td><td>If movement is large, search for each window's start</td><td><code>spam-pixelSearch</code></td><td class="n">7</td></tr>
+      <tr><td class="n">4</td><td>Refine every window to below a voxel</td><td><code>spam-ldic</code></td><td class="n">4, 6</td></tr>
+      <tr><td class="n">5</td><td>Check each node before using it</td><td>Status and correlation</td><td class="n">2, 4</td></tr>
+    </tbody>
+  </table></div>
+</section>
+<section>
+  <h2>How far can you trust it?</h2>
+  <vox>Being a good detective means knowing what you don't know. A finished displacement field looks very convincing, but each kind of check only catches certain mistakes.</vox>
+  <div class="wrap"><table>
+    <thead><tr><th scope="col">Check</th><th scope="col">Catches</th><th scope="col">Misses</th></tr></thead>
+    <tbody>
+      <tr><th scope="row"><code>returnStatus</code></th><td>Windows that never settled</td><td>False matches, which can still score status 2</td></tr>
+      <tr><th scope="row">Shift-test correlation</th><td>Large tracking errors</td><td>Errors smaller than about a voxel</td></tr>
+      <tr><th scope="row">Comparing with another DVC method</th><td>Errors in one method</td><td>Errors both methods share. Neither is ground truth.</td></tr>
+      <tr><th scope="row">Known synthetic movement</th><td>Real accuracy, as in a test with a known answer</td><td>Real-scan effects the test doesn't include</td></tr>
+    </tbody>
+  </table></div>
+  <real t="spam-filterPhiField">Strong strain changes a window's pattern too, so collapse lowers correlation even for a good answer. SPAM also has an optional filter that can replace poor nodes using their neighbours. A filtered field looks tidier, but those values are filled in, not measured, so keep track of which nodes they are.</real>
+</section>
+<section>
+  <h2>Final quiz</h2>
+  <p>Pick an answer for each question. You'll see why straight away.</p>
+  <div id="quiz" class="quiz"></div>
+  <div class="msg" id="score" aria-live="polite"></div>
+</section>
+<section>
+  <h2>What next?</h2>
+  <p>Ready to run it yourself? <a href="@@COURSE2" style="color:var(--blue);font-weight:700">Continue to the SPAM Commands Course</a>, which teaches every one of these flags using real runs.</p>
+</section>
+<section>
+  <h2>You did it</h2>
+  <vox>You now know more about DVC than most people who just press the button. Here are the flags you'll meet when you run it: <code>-bb</code>, <code>-be</code>, <code>-hws</code>, <code>-ns</code>, <code>-pf</code>, <code>-mf1</code>, <code>-mc</code>, <code>-sr</code> and <code>-np</code>. Each one connects to something you've already played with.</vox>
+</section>
+<script>
+(function () {
+  BONE.ready();
+  var C = $("c"), ctx = ctxOf(C), A = sheet(360, 240, 2), B = sheet(360, 240, 2), M = sheet(360, 240, 2);
+  paint(A, function (i, j) { return gray(BONE.fixed(i, j)); }); paint(B, function (i, j) { return gray(BONE.moved(i, j)); });
+  paint(M, function (i, j) { return BONE.inside(i, j) ? [90, 150, 255] : [16, 22, 38]; });
+  var nodes = [], H = 20, S = [6, 4]; for (var y = 30; y < BONE.h; y += 30) for (var x = 30; x < BONE.w; x += 30) if (BONE.inside(x, y)) nodes.push([x, y]);
+  var solved = nodes.map(function (n) { var f = function (a, b) { return BONE.fixed(a + n[0], b + n[1]); }, g = function (a, b) { return BONE.moved(a + n[0], b + n[1]); }, p = pixelSearch(f, g, H, 36, 2, 3, S), r = register(makeOperator(f, H, 2), g, [p.x, p.y], 50); return { n: n, p: [p.x, p.y], u: r.u, status: r.status, cc: compare(f, g, r.u[0], r.u[1], H, 2).zncc }; });
+  function arrows(sel, t, col, k) { ctx.lineWidth = 1.5; solved.forEach(function (q) { var u = sel(q), c = col ? col(q) : "#3ddc97"; ctx.strokeStyle = ctx.fillStyle = c; ctx.beginPath(); ctx.moveTo(q.n[0], q.n[1]); ctx.lineTo(q.n[0] + u[0] * t * k, q.n[1] + u[1] * t * k); ctx.stroke(); ctx.beginPath(); ctx.arc(q.n[0], q.n[1], 2, 0, 7); ctx.fill(); }); }
+  var scenes = [
+    { t: "Two scans", s: "We start with the unloaded and loaded scans. The bone has moved and changed shape.", d: function (p) { ctx.drawImage(Math.floor(p * 6) % 2 ? B : A, 0, 0, 360, 240); } },
+    { t: "Step 1: the mask", s: "SPAM should only work on bone, so we paint a mask over it. Air will be skipped.", d: function (p) { ctx.drawImage(A, 0, 0, 360, 240); ctx.globalAlpha = Math.min(.55, p); ctx.drawImage(M, 0, 0, 360, 240); ctx.globalAlpha = 1; } },
+    { t: "Step 2: registration", s: "One Phi for the whole scan handles the overall slide and squash. Every node gets the same hint.", d: function (p) { ctx.drawImage(A, 0, 0, 360, 240); arrows(function () { return S; }, p, function () { return "#ffd166"; }, 3); } },
+    { t: "Step 3: pixel search", s: "Each window searches nearby for its best match. Now the hints follow the local movement.", d: function (p) { ctx.drawImage(A, 0, 0, 360, 240); var N = Math.floor(p * solved.length); solved.slice(0, N).forEach(function (q) { ctx.strokeStyle = "#7fb2ff"; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(q.n[0], q.n[1]); ctx.lineTo(q.n[0] + q.p[0] * 3, q.n[1] + q.p[1] * 3); ctx.stroke(); }); var w = solved[Math.min(N, solved.length - 1)].n; ctx.strokeStyle = "#ffd166"; ctx.lineWidth = 2; ctx.strokeRect(w[0] - H, w[1] - H, 2 * H + 1, 2 * H + 1); } },
+    { t: "Step 4: local DVC", s: "Every window runs the hiker from its own hint, ending up with sub-voxel accuracy and its own Phi.", d: function (p) { ctx.drawImage(A, 0, 0, 360, 240); arrows(function (q) { return [q.p[0] + (q.u[0] - q.p[0]) * p, q.p[1] + (q.u[1] - q.p[1]) * p]; }, 1, null, 3); } },
+    { t: "Step 5: check the nodes", s: "Nodes are coloured by correlation. Weak ones are removed before anyone uses the labels.", d: function (p) { ctx.drawImage(A, 0, 0, 360, 240); arrows(function (q) { return q.u; }, 1, function (q) { return q.cc > .7 ? "#3ddc97" : "#ff6b4a"; }, 3); } },
+    { t: "The finished field", s: "Thousands of arrows, in 3D. This is the displacement field, the result of DVC.", d: function (p) { ctx.drawImage(B, 0, 0, 360, 240); arrows(function (q) { return q.u; }, Math.min(1, p * 1.5), null, 3); } }
+  ];
+  var sc = 0, t0 = 0, playing = false, raf, DUR = 4800;
+  function show(p) { var s = scenes[sc]; s.d(p); $("cap").textContent = s.t; $("sub").textContent = s.s; }
+  function tick(now) { if (!playing) return; if (!t0) t0 = now; var p = (now - t0) / DUR; if (p >= 1) { if (sc < scenes.length - 1) { sc++; t0 = now; p = 0; } else { playing = false; $("play").textContent = "Play again"; show(1); return; } } show(p); raf = requestAnimationFrame(tick); }
+  $("play").addEventListener("click", function () { if (playing) { playing = false; this.textContent = "Play the film"; return; } if (sc === scenes.length - 1) sc = 0; playing = true; t0 = 0; this.textContent = "Pause"; raf = requestAnimationFrame(tick); });
+  $("next").addEventListener("click", function () { playing = false; $("play").textContent = "Play the film"; sc = Math.min(scenes.length - 1, sc + 1); show(1); });
+  $("prev").addEventListener("click", function () { playing = false; $("play").textContent = "Play the film"; sc = Math.max(0, sc - 1); show(1); });
+  show(1);
+  var Q = [
+    ["What does a single DVC window give you?", ["One movement and shape change for that small region", "The strength of the bone", "A new CT scan"], 0, "Each window gives one Phi: a displacement plus a local shape change."],
+    ["Which score is unaffected if the loaded scan is simply brighter?", ["Squared-difference error", "Correlation", "Neither"], 1, "Correlation compares pattern, so an overall brightness change doesn't matter."],
+    ["How many unknown numbers are in Phi?", ["3", "6", "12"], 2, "9 in F and 3 in t. The bottom row is always 0, 0, 0, 1."],
+    ["In each step, what does SPAM solve?", ["M · ΔΦ = A", "Every possible position", "The mean of the window"], 0, "It solves for the update using gradient and difference."],
+    ["Why does registration start with binned scans?", ["To make the bone stiffer", "A smoother landscape lets it reach further", "Because CT scans are 2D"], 1, "Blur removes small dips, and averaging makes it faster too."],
+    ["Status 2 means...", ["Definitely the correct answer", "The updates became tiny and it stopped", "The window was skipped"], 1, "It may still be a false match, so check correlation too."],
+    ["What does a mask mainly do?", ["Skips windows that are mostly air", "Removes the rigid motion", "Makes the voxels smaller"], 0, "Air windows have no real pattern, so skipping them saves a lot of time."],
+    ["When is a pixel search most useful?", ["Movement is tiny everywhere", "Movement is large or changes sharply", "Whenever you have spare time"], 1, "For example near a collapse, where one registration can't describe everything."],
+    ["What's the risk of too wide a search range?", ["False matches", "The scan gets deleted", "The mask gets bigger"], 0, "Repetitive patterns offer more lookalikes as the search grows."],
+    ["If two DVC methods agree, what do you know?", ["Both are exactly right", "They agree, but neither is ground truth", "The bone didn't move"], 1, "Only a test with a known movement measures accuracy."]
+  ], box = $("quiz"), right = 0, seen = 0;
+  Q.forEach(function (q, i) {
+    var w = document.createElement("div"); w.className = "lab"; var h = document.createElement("h3"); h.textContent = (i + 1) + ". " + q[0]; w.appendChild(h); var res = document.createElement("p");
+    q[1].forEach(function (a, k) { var b = document.createElement("button"); b.type = "button"; b.textContent = a; b.addEventListener("click", function () { if (w.dataset.done) return; w.dataset.done = 1; seen++; if (k === q[2]) { right++; b.className = "right"; res.textContent = "Yes! " + q[3]; } else { b.className = "wrong"; w.querySelectorAll("button")[q[2]].className = "right"; res.textContent = "Not quite. " + q[3]; } if (seen === Q.length) $("score").textContent = "You scored " + right + " out of " + Q.length + "."; }); w.appendChild(b); });
+    w.appendChild(res); box.appendChild(w);
+  });
+})();
+</script>

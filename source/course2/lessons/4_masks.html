@@ -1,0 +1,76 @@
+<header>
+  <div class="ep">Lesson 4</div>
+  <h1>Mask Flags</h1>
+  <p class="lede">Tell SPAM where not to look. It saves time and removes rubbish results.</p>
+</header>
+<section>
+  <h2>Painting over the air</h2>
+  <vox>Imagine searching for your friend in a stadium, but they told you they're in section B. You'd ignore all the others. A mask is that hint. It's a picture the same size as your scan: 0 means "ignore this", and anything else means "use this".</vox>
+  <div class="term"><span class="p">$ spam-ldic</span> <span class="v">unloaded.tif loaded.tif</span> <span class="fl">-mf1</span> <span class="v">mask.tif</span> <span class="fl">-mc</span> <span class="v">0.5</span> <span class="fl">-pf</span> <span class="v">reg-registration.tsv</span> <span class="fl">-hws</span> <span class="v">25</span> <span class="fl">-ns</span> <span class="v">50</span></div>
+  <div class="wrap"><table>
+    <thead><tr><th scope="col">Flag</th><th scope="col">Means</th><th scope="col" class="n">Default</th></tr></thead>
+    <tbody>
+      <tr><th scope="row"><code>-mf1</code></th><td>Mask file for image 1, a TIFF the same size as the scan</td><td class="n">none</td></tr>
+      <tr><th scope="row"><code>-mc</code></th><td>Fraction of a window that must be unmasked</td><td class="n">0.5</td></tr>
+      <tr><th scope="row"><code>-glt</code></th><td>Skip a window if its average grey is below this value</td><td class="n">off</td></tr>
+    </tbody>
+  </table></div>
+  <p>The name means a mask on image 1 only. It uses your reference scan, so make the mask from that one. <code>spam-reg</code> accepts <code>-mf1</code> too.</p>
+</section>
+<section>
+  <h2>What does <code>-mc</code> do?</h2>
+  <p>Drag the slider. The yellow window sits at the edge of a sample. It's used only if enough of it is unmasked.</p>
+  <div class="lab">
+    <canvas id="c" width="640" height="360" role="img" aria-label="A window overlapping the edge of a sample"></canvas>
+    <label class="s">-mc value<input id="mc" type="range" min="0" max="1" step="0.05" value="0.5"><output></output></label>
+    <label class="s">Window position<input id="pos" type="range" min="130" max="420" step="5" value="280"><output></output></label>
+    <div class="msg" id="m" aria-live="polite"></div>
+  </div>
+  <real t="spam/DIC/grid.py">The test is <code>(imagette1mask != 0).mean() &gt;= minMaskCoverage</code>. So <code>-mc 0.5</code> keeps a window when at least half of it is unmasked. The help text words it differently, so this is worth knowing. If the window fails the test, it gets status &minus;5 and SPAM skips it.</real>
+</section>
+<section>
+  <h2>Real results</h2>
+  <p>All these runs used the same settings, apart from the mask. Choose one.</p>
+  <div class="lab">
+    <div class="ctrl" id="b"></div>
+    <div class="nums"><div class="num">Nodes run<span id="a1"></span></div><div class="num">Skipped<span id="a2"></span></div><div class="num">Converged<span id="a3"></span></div><div class="num">Wrong by over 2 vx<span id="a4"></span></div><div class="num">Typical miss<span id="a5"></span></div><div class="num">Iterations<span id="a6"></span></div></div>
+  </div>
+  <vox>Without a mask, 10 windows hit the iteration limit and 12 were wrong, and they were all doing pointless work on air and edges. As <code>-mc</code> rises, you lose nodes near the surface. Set it too high and you throw away good edge nodes. <code>0.5</code> is a sensible start.</vox>
+</section>
+<section>
+  <h2>No mask? Try <code>-glt</code></h2>
+  <p><code>-glt</code> means grey low threshold. It skips dark windows, with no mask file needed. But it only works if you know how dark your air is. Here, air averaged about 21 grey and the sample about 126.</p>
+  <div class="wrap"><table>
+    <thead><tr><th scope="col">Setting (no mask)</th><th scope="col" class="n">Nodes run</th><th scope="col" class="n">Skipped</th><th scope="col">What happened</th></tr></thead>
+    <tbody>
+      <tr><th scope="row"><code>-glt 5</code></th><td class="n">64</td><td class="n">0</td><td>Below the air value, so it skipped nothing</td></tr>
+      <tr><th scope="row"><code>-glt 60</code></th><td class="n">46</td><td class="n">18</td><td>Skipped most of the air windows</td></tr>
+      <tr><th scope="row"><code>-glt 100</code></th><td class="n">31</td><td class="n">33</td><td>Started skipping edge windows too</td></tr>
+    </tbody>
+  </table></div>
+  <vox>Check the grey value of air in your scan before picking a number. A value that worked for someone else's scanner may do nothing on yours.</vox>
+</section>
+<section>
+  <h2>Remember this</h2>
+  <ul class="keys">
+    <li><code>-mf1</code> gives the mask, and 0 means ignore.</li>
+    <li><code>-mc</code> is the fraction that must be unmasked.</li>
+    <li><code>-glt</code> is a quick option, but check your air value first.</li>
+  </ul>
+</section>
+<script>
+(function () {
+  var c = $("c");
+  function draw() {
+    var mc = +$("mc").value, x0 = +$("pos").value, G = fitCanvas(c, 300), g = G.x, sc = G.w / 640, W = 150, y0 = 75, edge = 300;
+    $("mc").nextElementSibling.textContent = mc.toFixed(2); $("pos").nextElementSibling.textContent = x0;
+    g.save(); g.scale(sc, 1); g.fillStyle = "#39435e"; g.fillRect(0, 0, 640, 300); g.fillStyle = "#c9b48e"; g.fillRect(0, 0, edge, 300);
+    var inside = Math.max(0, Math.min(W, edge - x0)) / W, ok = inside >= mc; g.strokeStyle = ok ? "#3ddc97" : "#ff6b4a"; g.lineWidth = 5; g.strokeRect(x0, y0, W, W); g.fillStyle = "#fff"; g.font = "600 16px " + cssv("--text"); g.fillText("Sample (mask 1)", 22, 30); g.fillText("Air (mask 0)", 480, 30); g.restore();
+    $("m").textContent = Math.round(inside * 100) + "% unmasked, and -mc is " + mc.toFixed(2) + ": this window is " + (ok ? "used." : "skipped (status −5)."); $("m").style.color = ok ? "" : "var(--coral)";
+  }
+  $("mc").addEventListener("input", draw); $("pos").addEventListener("input", draw); draw(); addEventListener("resize", draw);
+  var box = $("b");
+  function show(r, b) { box.querySelectorAll("button").forEach(function (x) { x.setAttribute("aria-pressed", "false"); }); b.setAttribute("aria-pressed", "true"); $("a1").textContent = r.tried; $("a2").textContent = r.skipped; $("a3").textContent = r.conv; $("a4").textContent = r.wrong; $("a5").textContent = r.rms.toFixed(2) + " vx"; $("a6").textContent = r.its.toLocaleString(); }
+  MASK.forEach(function (r) { var b = document.createElement("button"); b.type = "button"; b.textContent = r.mc === null ? "No mask" : "-mc " + r.mc; b.addEventListener("click", function () { show(r, b); }); box.appendChild(b); if (r.mc === 0.5) show(r, b); });
+})();
+</script>

@@ -1,0 +1,88 @@
+<header>
+  <div class="ep">Lesson 3</div>
+  <h1>Phi, the Instruction Card</h1>
+  <p class="lede">Bone doesn't only slide. It also squashes, stretches, leans and turns. SPAM keeps all of that on one small card.</p>
+</header>
+<section>
+  <h2>A card of instructions</h2>
+  <vox>Imagine giving a friend a card that says exactly how to change a square of rubber: "Slide it this far, squash it this much, and lean it a bit." In SPAM, that card is called <b>Phi</b>, written &Phi;. It's a table of numbers, and every window gets its own.</vox>
+  <div class="lab">
+    <div class="row">
+      <div class="tile"><canvas id="v" width="480" height="480" data-s="2"></canvas>Bone pattern with the card applied</div>
+      <div class="tile"><canvas id="g" role="img" aria-label="Grid showing the same change"></canvas>The same change shown on a grid</div>
+    </div>
+    <label class="s">Slide in x<input id="tx" type="range" min="-40" max="40" value="0"><output></output></label>
+    <label class="s">Slide in y<input id="ty" type="range" min="-40" max="40" value="0"><output></output></label>
+    <label class="s">Squash in y<input id="sy" type="range" min="-30" max="30" value="0"><output></output></label>
+    <label class="s">Stretch in x<input id="sx" type="range" min="-30" max="30" value="0"><output></output></label>
+    <label class="s">Lean (shear)<input id="sh" type="range" min="-30" max="30" value="0"><output></output></label>
+    <label class="s">Turn<input id="ro" type="range" min="-30" max="30" value="0"><output></output></label>
+    <div class="ctrl"><button id="load" type="button">Try a squeeze like a real vertebra</button><button id="zero" type="button">Reset</button></div>
+    <h3>Your card, Phi</h3>
+    <div class="wrap"><table id="m" aria-label="The four by four Phi matrix"></table></div>
+    <p class="note">Blue numbers are <b>F</b>, which changes shape. Orange numbers are <b>t</b>, the slide. With everything at zero, F is 1s and 0s and nothing changes.</p>
+  </div>
+</section>
+<section>
+  <h2>Reading the card</h2>
+  <div class="wrap"><table>
+    <thead><tr><th scope="col">Part</th><th scope="col">How many numbers</th><th scope="col">What it means</th></tr></thead>
+    <tbody>
+      <tr><th scope="row">t, the translation</th><td>3</td><td>The slide in z, y and x. This is your displacement.</td></tr>
+      <tr><th scope="row">F, the deformation</th><td>9</td><td>Stretch, squash, shear and rotation. 1 means no stretch, and 0.98 means 2% shorter.</td></tr>
+      <tr><th scope="row">Bottom row</th><td>0, 0, 0, 1</td><td>Always the same. It makes the maths neat.</td></tr>
+    </tbody>
+  </table></div>
+  <vox>So SPAM isn't only looking for 3 numbers. It's looking for <b>12</b>. If bone is being squashed inside a window, the pattern is slightly squashed too. A plain slide could never match it perfectly, so SPAM lets the window change shape as well.</vox>
+</section>
+<section>
+  <h2>Reading a real file</h2>
+  <p>SPAM stores this card in its output. Each row of an <code>ldic.tsv</code> file has these columns:</p>
+  <div class="f">Fzz Fzy Fzx Zdisp | Fyz Fyy Fyx Ydisp | Fxz Fxy Fxx Xdisp</div>
+  <p>Here's an example card, with made-up numbers:</p>
+  <div class="wrap"><table>
+    <tbody>
+      <tr><td class="n" style="color:var(--blue)">0.98</td><td class="n" style="color:var(--blue)">&minus;0.01</td><td class="n" style="color:var(--blue)">0.00</td><td class="n" style="color:var(--coral)">&minus;4.0</td></tr>
+      <tr><td class="n" style="color:var(--blue)">0.00</td><td class="n" style="color:var(--blue)">1.02</td><td class="n" style="color:var(--blue)">0.01</td><td class="n" style="color:var(--coral)">20.0</td></tr>
+      <tr><td class="n" style="color:var(--blue)">0.01</td><td class="n" style="color:var(--blue)">&minus;0.01</td><td class="n" style="color:var(--blue)">1.01</td><td class="n" style="color:var(--coral)">1.5</td></tr>
+      <tr><td class="n">0</td><td class="n">0</td><td class="n">0</td><td class="n">1</td></tr>
+    </tbody>
+  </table></div>
+  <p>Read the top-left number: 0.98 in z means the sample got about 2% shorter along z. The right-hand column shows it also moved 20 voxels in y.</p>
+  <real t="spam/DIC/registration.py">The rule at the heart of the code is <code>im1(x) = im2(&Phi;.x)</code>. Find the point x in the unloaded scan, use Phi to find where it went, and read the loaded scan there. SPAM keeps im1 still and deforms im2 until it matches. Phi usually lands between voxels, so SPAM estimates the grey value from its neighbours, using linear interpolation by default.</real>
+</section>
+<section>
+  <h2>Remember this</h2>
+  <ul class="keys">
+    <li>Phi is a 4 &times; 4 table holding <b>12 unknown numbers</b>.</li>
+    <li><b>t</b> is the movement and <b>F</b> is the shape change.</li>
+    <li>Registration finds one Phi for the whole scan. Local DVC finds one Phi per window.</li>
+  </ul>
+  <p>So what's left is finding those 12 numbers. Next, meet the hiker.</p>
+</section>
+<script>
+(function () {
+  var ids = ["tx", "ty", "sy", "sx", "sh", "ro"], labels = { tx: " vx", ty: " vx", sy: "%", sx: "%", sh: "%", ro: "°" };
+  function F() {
+    var a = +$("ro").value / 3 * Math.PI / 180, c = Math.cos(a), s = Math.sin(a), Sx = 1 + +$("sx").value / 100, Sy = 1 + +$("sy").value / 100, h = +$("sh").value / 100;
+    return [[c * Sx, -s * Sy + c * h * Sy], [s * Sx, c * Sy + s * h * Sy]];
+  }
+  function draw() {
+    ids.forEach(function (i) { var e = $(i), v = +e.value; e.nextElementSibling.textContent = (i === "ro" ? (v / 3).toFixed(0) : v) + labels[i]; });
+    var m = F(), t = [+$("tx").value, +$("ty").value], det = m[0][0] * m[1][1] - m[0][1] * m[1][0], c = 120;
+    var i00 = m[1][1] / det, i01 = -m[0][1] / det, i10 = -m[1][0] / det, i11 = m[0][0] / det;
+    paint($("v"), function (x, y) { var X = x - c - t[0], Y = y - c - t[1]; return gray(tex(i00 * X + i01 * Y, i10 * X + i11 * Y)); });
+    var G = fitCanvas($("g"), $("g").clientWidth || 240), g = G.x, S = G.w / 240;
+    g.clearRect(0, 0, G.w, G.h); g.lineWidth = 1.4;
+    var P = function (a, b) { return [(m[0][0] * a + m[0][1] * b + t[0] + c) * S, (m[1][0] * a + m[1][1] * b + t[1] + c) * S]; };
+    g.strokeStyle = cssv("--line"); for (var q = -60; q <= 60; q += 20) { g.beginPath(); g.moveTo((q + c) * S, 60 * S); g.lineTo((q + c) * S, 180 * S); g.moveTo(60 * S, (q + c) * S); g.lineTo(180 * S, (q + c) * S); g.stroke(); }
+    g.strokeStyle = cssv("--blue"); for (q = -60; q <= 60; q += 20) { var A = P(q, -60), B = P(q, 60), C = P(-60, q), D = P(60, q); g.beginPath(); g.moveTo(A[0], A[1]); g.lineTo(B[0], B[1]); g.moveTo(C[0], C[1]); g.lineTo(D[0], D[1]); g.stroke(); }
+    var f = function (v) { return '<td class="n" style="color:var(--blue)">' + fmt(v, 3) + "</td>"; }, o = function (v) { return '<td class="n" style="color:var(--coral)">' + fmt(v, 1) + "</td>"; };
+    $("m").innerHTML = "<thead><tr><th></th><th class=n>z</th><th class=n>y</th><th class=n>x</th><th class=n>slide</th></tr></thead><tbody><tr><th>z</th>" + f(1) + f(0) + f(0) + o(0) + "</tr><tr><th>y</th>" + f(0) + f(m[1][1]) + f(m[1][0]) + o(t[1]) + "</tr><tr><th>x</th>" + f(0) + f(m[0][1]) + f(m[0][0]) + o(t[0]) + "</tr><tr><th></th><td class=n>0</td><td class=n>0</td><td class=n>0</td><td class=n>1</td></tr></tbody>";
+  }
+  ids.forEach(function (i) { $(i).addEventListener("input", draw); });
+  $("zero").addEventListener("click", function () { ids.forEach(function (i) { $(i).value = 0; }); draw(); });
+  $("load").addEventListener("click", function () { $("tx").value = 6; $("ty").value = 20; $("sy").value = -15; $("sx").value = 5; $("sh").value = 8; $("ro").value = 3; draw(); });
+  draw(); addEventListener("resize", draw);
+})();
+</script>

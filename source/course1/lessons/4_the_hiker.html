@@ -1,0 +1,119 @@
+<header>
+  <div class="ep">Lesson 4</div>
+  <h1>The Hiker in the Fog</h1>
+  <p class="lede">This is the heart of SPAM: how it turns a rough guess into a precise answer.</p>
+</header>
+<section>
+  <h2>Lost in the fog</h2>
+  <vox>Imagine you're on a foggy hillside, looking for the lowest point in the valley. You can't see the valley, but you can feel the slope under your feet. So you step downhill, feel again, and step again. When the ground is flat, you stop. In SPAM, height is the <b>error</b>, and your position is the <b>guess</b>.</vox>
+  <p>SPAM doesn't test every possible position here, because that would take far too long. It starts from a guess and improves it. That's why this step can reach a small fraction of a voxel.</p>
+</section>
+<section>
+  <h2>One bump, one step at a time</h2>
+  <p>Here's the simplest possible case: a single line of voxels with one bright bump. One bump stays still, and the other is the loaded scan moved by the current guess. The goal is to slide one exactly on top of the other. The bump moved by exactly 22 voxels.</p>
+  <div class="lab">
+    <div class="ctrl"><button id="c1" type="button" aria-pressed="true">Close start</button><button id="c2" type="button" aria-pressed="false">Far start</button><button id="st" class="go" type="button">Take one step</button><button id="rs" type="button">Start again</button></div>
+    <canvas id="p1" role="img" aria-label="Fixed bump and moving bump"></canvas>
+    <div class="nums"><div class="num">Guess<span id="n1"></span></div><div class="num">A (push)<span id="n2"></span></div><div class="num">M (stiffness)<span id="n3"></span></div><div class="num">Next step = A &divide; M<span id="n4"></span></div><div class="num">Error<span id="n5"></span></div></div>
+    <div class="msg" id="m1" aria-live="polite"></div>
+  </div>
+  <vox>Try both starts! From close, the bumps overlap, so the difference tells SPAM which way to go. From far, they don't overlap at all. The push is zero, so SPAM takes a tiny step and thinks it's finished. It isn't lying. It just can't see anything from there.</vox>
+</section>
+<section>
+  <h2>The two clues: A and M</h2>
+  <p>Each step needs just two ingredients, built from the image's <b>gradient</b>, which tells you how fast brightness changes at each voxel, so it acts like the slope of the bone pattern.</p>
+  <div class="wrap"><table>
+    <thead><tr><th scope="col">Clue</th><th scope="col">How it's made</th><th scope="col">In plain words</th></tr></thead>
+    <tbody>
+      <tr><th scope="row">A</th><td>Sum of gradient &times; difference</td><td>Which way to push, and how hard.</td></tr>
+      <tr><th scope="row">M</th><td>Sum of gradient &times; gradient</td><td>How much texture the window has, so how far a push moves it.</td></tr>
+    </tbody>
+  </table></div>
+  <div class="f">M &middot; &Delta;&Phi; = A &nbsp;&nbsp;so&nbsp;&nbsp; &Delta;&Phi; = M&#8315;&sup1; &middot; A</div>
+  <p>With one unknown, that's a simple division, as in the lab above. Phi has 12 unknowns, so A is a list of 12 numbers and M is a 12 &times; 12 table, but the idea is identical.</p>
+  <real t="spam/DIC/registration.py, register()">The loop is short. Compute M and A, then solve <code>deltaPhi = dot(inv(M), A)</code>. Then update the guess with <code>Phi = dot(Phi, eye(4) + deltaPhi)</code>, redraw the image with the new Phi, and work out the error. A smart shortcut: the gradient is computed <b>once</b> on the still image, so M is built only on the first iteration and reused. Only A is recalculated each time, which saves a lot of time. The <code>-ug</code> option turns this shortcut off.</real>
+</section>
+<section>
+  <h2>Now with a real pattern</h2>
+  <p>This is the same maths on a window of made-up bone texture. It solves for a shift in 2 directions, where SPAM solves all 12 numbers. The true shift is (13, &minus;9).</p>
+  <div class="lab">
+    <div class="ctrl"><button id="w1" type="button" aria-pressed="true">Start close (10, &minus;7)</button><button id="w2" type="button" aria-pressed="false">Start far (0, 0)</button><button id="w3" class="go" type="button">Next iteration</button><button id="w4" type="button">Play to the end</button></div>
+    <div class="row">
+      <div class="tile"><canvas id="a" width="164" height="164" data-s="4"></canvas>Unloaded window: stays still</div>
+      <div class="tile"><canvas id="b" width="164" height="164" data-s="4"></canvas>Loaded window at the current guess</div>
+      <div class="tile"><canvas id="c" width="164" height="164" data-s="4"></canvas>Difference: what's left to explain</div>
+    </div>
+    <canvas id="p2" role="img" aria-label="Error falling with each iteration"></canvas>
+    <div class="nums"><div class="num">Iteration<span id="i1"></span></div><div class="num">Guess<span id="i2"></span></div><div class="num">Error<span id="i3"></span></div><div class="num">Step size<span id="i4"></span></div></div>
+    <div class="msg" id="m2" aria-live="polite"></div>
+  </div>
+  <vox>See the far start? The hiker found a small dip on the hillside and stopped there. The ground is flat, so SPAM says "converged", but it's the wrong place. The error stays high, and that's our clue. A real answer needs a good starting guess, and that's what the next lessons are about.</vox>
+</section>
+<section>
+  <h2>When does SPAM stop?</h2>
+  <p>Every window ends with a <code>returnStatus</code>, like a report card.</p>
+  <div class="wrap"><table>
+    <thead><tr><th scope="col" class="n">Status</th><th scope="col">What happened</th></tr></thead>
+    <tbody>
+      <tr><td class="n good">2</td><td>The step became tiny, below <code>deltaPhiMin</code> = 0.001. Converged.</td></tr>
+      <tr><td class="n">1</td><td>It hit the iteration limit, which is 50 in <code>spam-ldic</code>.</td></tr>
+      <tr><td class="n bad">&minus;1</td><td>The error got much worse, so it's probably diverging.</td></tr>
+      <tr><td class="n bad">&minus;2</td><td>M couldn't be inverted, usually because there's too little texture.</td></tr>
+      <tr><td class="n bad">&minus;3</td><td>The window's volume changed impossibly, by more than 3 times or below 0.2 times.</td></tr>
+      <tr><td class="n bad">&minus;4</td><td>Phi couldn't be inverted, usually from divergence.</td></tr>
+      <tr><td class="n">&minus;5</td><td>Skipped, for example masked out or too dark.</td></tr>
+      <tr><td class="n">&minus;7</td><td>Skipped because the starting Phi was empty.</td></tr>
+    </tbody>
+  </table></div>
+  <vox>Big warning: status 2 means "I stopped moving", not "I'm right". Our far start just proved that. So we always check the result another way too.</vox>
+</section>
+<section>
+  <h2>Remember this</h2>
+  <ul class="keys">
+    <li>SPAM improves a guess in steps, using the difference and the gradient.</li>
+    <li>Each step solves <b>M &middot; &Delta;&Phi; = A</b>.</li>
+    <li>It only sees nearby, so <b>the starting guess really matters</b>.</li>
+    <li>Status 2 means it stopped, not that it's definitely right.</li>
+  </ul>
+</section>
+<script>
+(function () {
+  var N = 240, T = 22, sig = 13, fx = [], gr = [], u, start = 0, done = false, hist = [];
+  function b(x) { return Math.exp(-Math.pow((x - 70) / sig, 2) / 2); }
+  for (var i = 0; i < N; i++) { fx.push(b(i)); gr.push((b(i + 1) - b(i - 1)) / 2); }
+  var M = 0; gr.forEach(function (g) { M += g * g; });
+  function loaded(x) { return b(x - T - (start === -120 ? 122 : 0)); }
+  function calc() { var A = 0, e = 0, sum = 0; for (var i = 0; i < N; i++) { var r = fx[i] - loaded(i + u); A += gr[i] * r; e += r * r; sum += fx[i]; } return { A: A, e: e / sum }; }
+  function view() {
+    var c = calc(), step = c.A / M, xs = []; for (var i = 0; i < N; i += 2) xs.push(i);
+    plot($("p1"), 200, [{ color: cssv("--blue"), d: xs.map(function (i) { return [i, fx[i]]; }) }, { color: cssv("--coral"), d: xs.map(function (i) { return [i, loaded(i + u)]; }) }], { x: [0, N], y: [-.05, 1.25], xt: [0, 60, 120, 180, 240], legend: [[cssv("--blue"), "Still bump"], [cssv("--coral"), "Moved by the guess"]] });
+    $("n1").textContent = fmt(u, 2); $("n2").textContent = fmt(c.A, 3); $("n3").textContent = M.toFixed(2); $("n4").textContent = fmt(step, 3); $("n5").textContent = fmt(c.e, 3);
+    if (done) return;
+    if (Math.abs(step) < 0.001) { done = true; $("m1").textContent = c.e < 0.01 ? "Converged, and the bumps match! Status 2." : "Stopped with status 2, but the bumps don't match. It can't see the other bump."; $("m1").style.color = c.e < 0.01 ? "" : "var(--coral)"; }
+  }
+  function reset() { u = 0; done = false; $("m1").textContent = ""; $("m1").style.color = ""; view(); }
+  $("st").addEventListener("click", function () { if (done) return; var c = calc(); u += c.A / M; view(); });
+  $("rs").addEventListener("click", reset);
+  $("c1").addEventListener("click", function () { start = 0; this.setAttribute("aria-pressed", "true"); $("c2").setAttribute("aria-pressed", "false"); reset(); });
+  $("c2").addEventListener("click", function () { start = -120; this.setAttribute("aria-pressed", "true"); $("c1").setAttribute("aria-pressed", "false"); reset(); });
+  reset();
+  var T2 = [13, -9], g = shifted(T2), op = makeOperator(function (x, y) { return tex(x, y); }, 20), mode = [10, -7], run, k, timer;
+  function show() {
+    var p = run.path[k], mx = run.path[0].error * 1.1, pts = run.path.slice(0, k + 1).map(function (q) { return [q.k, q.error]; }), last = k === run.path.length - 1;
+    paint($("a"), function (i, j) { return gray(tex(i - 20, j - 20)); });
+    paint($("b"), function (i, j) { return gray(g(i - 20 + p.u[0], j - 20 + p.u[1])); });
+    paint($("c"), function (i, j) { return gray(128 + (tex(i - 20, j - 20) - g(i - 20 + p.u[0], j - 20 + p.u[1])) / 2); });
+    plot($("p2"), 170, [{ color: cssv("--blue"), d: pts }], { x: [0, 50], y: [0, mx], xt: [0, 10, 20, 30, 40, 50], yt: [0, Math.round(mx)], legend: [[cssv("--blue"), "Error at each iteration"]] });
+    $("i1").textContent = p.k; $("i2").textContent = "(" + fmt(p.u[0]) + ", " + fmt(p.u[1]) + ")"; $("i3").textContent = p.error.toFixed(2); $("i4").textContent = p.step.toFixed(3);
+    var ok = run.path[run.path.length - 1].error < 1;
+    $("m2").textContent = last ? (ok ? "Found the true shift. Status 2." : "Status 2 again, but the error is still high. This is a false match.") : ""; $("m2").style.color = ok ? "" : "var(--coral)";
+  }
+  function reset2() { clearInterval(timer); run = register(op, g, mode); k = 0; show(); }
+  $("w3").addEventListener("click", function () { if (k < run.path.length - 1) { k++; show(); } });
+  $("w4").addEventListener("click", function () { clearInterval(timer); timer = setInterval(function () { if (k < run.path.length - 1) { k++; show(); } else clearInterval(timer); }, 260); });
+  $("w1").addEventListener("click", function () { mode = [10, -7]; this.setAttribute("aria-pressed", "true"); $("w2").setAttribute("aria-pressed", "false"); reset2(); });
+  $("w2").addEventListener("click", function () { mode = [0, 0]; this.setAttribute("aria-pressed", "true"); $("w1").setAttribute("aria-pressed", "false"); reset2(); });
+  reset2();
+  addEventListener("resize", function () { view(); show(); });
+})();
+</script>

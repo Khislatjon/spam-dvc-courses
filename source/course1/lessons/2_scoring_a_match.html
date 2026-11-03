@@ -1,0 +1,75 @@
+<header>
+  <div class="ep">Lesson 2</div>
+  <h1>Scoring a Match</h1>
+  <p class="lede">A computer can't see a pattern. It can only compare numbers, so it needs a score.</p>
+</header>
+<section>
+  <h2>Laying one drawing over another</h2>
+  <vox>Trace a picture on see-through paper and slide it over the original. When they line up, every line sits on its partner. When they don't, you see double. SPAM does this with numbers, voxel by voxel. Remember, each voxel holds a grey value from 0 to 255.</vox>
+  <p>SPAM uses two different scores. Move the slider and watch them both.</p>
+  <div class="lab">
+    <label class="s">Shift the window<input id="s" type="range" min="-30" max="30" step="1" value="-12"><output id="so"></output></label>
+    <div class="row">
+      <div class="tile"><canvas id="a" width="164" height="164" data-s="4"></canvas>Unloaded window</div>
+      <div class="tile"><canvas id="b" width="164" height="164" data-s="4"></canvas>Loaded window, shifted</div>
+      <div class="tile"><canvas id="c" width="164" height="164" data-s="4"></canvas>Difference (plain grey means they match)</div>
+    </div>
+    <div class="nums"><div class="num">Error (lower is better)<span id="e"></span></div><div class="num">Correlation (higher is better)<span id="n"></span></div></div>
+    <canvas id="p" aria-label="Error and correlation against shift" role="img"></canvas>
+    <div class="ctrl"><button id="bright" type="button" aria-pressed="false">Make the loaded scan 40% brighter</button></div>
+    <p>The true shift is 13 voxels. Notice what each line does there.</p>
+  </div>
+</section>
+<section>
+  <h2>Score 1: the error</h2>
+  <vox>Think of a golf score: lower is better, and zero is perfect. Take two matching voxels, subtract, and square the answer so that minus signs can't cancel out. Add this up for every voxel in the window. A perfect match scores 0.</vox>
+  <div class="f">error = sum of (unloaded &minus; loaded)&sup2; &divide; sum of unloaded</div>
+  <real t="spam/DIC/registration.py, line 31">SPAM's <code>_errorCalc</code> is exactly this: <code>nansum(square(subtract(im1, im2))) / nansum(im1)</code>. This is the <code>error</code> column in the <code>ldic.tsv</code> output file. Dividing by the sum of the window makes bright and dark windows easier to compare.</real>
+</section>
+<section>
+  <h2>Score 2: the correlation</h2>
+  <vox>Press the brighter button, then move the slider. The error gets confused, but correlation doesn't care! It asks a different question: "Do the bright bits and dark bits line up?" A photo in dim light is still the same photo.</vox>
+  <div class="f">correlation = shared pattern &divide; biggest possible shared pattern</div>
+  <p>This is called normalised cross-correlation, or NCC. It runs from &minus;1 to 1, and 1 means a perfect pattern match.</p>
+  <real t="spam/DIC/pixelSearch.py">Pixel search picks the position with the highest correlation. Its code comment says values above 0.99 can generally be trusted and about 0.5 is random. Those guide values are for its search, so don't apply them to other correlation tests.</real>
+</section>
+<section>
+  <h2>Which score goes where</h2>
+  <div class="wrap"><table>
+    <thead><tr><th scope="col">Step</th><th scope="col">Score it uses</th><th scope="col">Why</th></tr></thead>
+    <tbody>
+      <tr><th scope="row">Refining a guess (Lesson 4)</th><td>Squared difference</td><td>Its maths gives a direction to move in.</td></tr>
+      <tr><th scope="row">Pixel search (Lesson 7)</th><td>Correlation</td><td>It compares many positions fairly.</td></tr>
+      <tr><th scope="row">Checking a finished result</th><td>Correlation</td><td>It's a separate check on the final answer.</td></tr>
+    </tbody>
+  </table></div>
+</section>
+<section>
+  <h2>Remember this</h2>
+  <ul class="keys">
+    <li><b>Error:</b> low is good, and it's sensitive to brightness.</li>
+    <li><b>Correlation:</b> high is good, and it only cares about pattern.</li>
+    <li>Plain grey in the difference image means a good match.</li>
+  </ul>
+</section>
+<script>
+(function () {
+  var T = [13, 0], bright = 1, H = 20;
+  var f = function (x, y) { return tex(x, y); }, g = function (x, y) { return bright * tex(x - T[0], y - T[1]); }, curve = [];
+  function build() { curve = []; for (var s = -30; s <= 30; s++) { var c = compare(f, g, s, 0, H, 2); curve.push([s, c.error, c.zncc]); } }
+  function draw() {
+    var s = +$("s").value, c = compare(f, g, s, 0, H), mx = 0; $("so").textContent = s + " vx";
+    paint($("a"), function (i, j) { return gray(f(i - 20, j - 20)); });
+    paint($("b"), function (i, j) { return gray(g(i - 20 + s, j - 20)); });
+    paint($("c"), function (i, j) { return gray(128 + (f(i - 20, j - 20) - g(i - 20 + s, j - 20)) / 2); });
+    $("e").textContent = fmt(c.error, 1); $("n").textContent = fmt(c.zncc);
+    curve.forEach(function (q) { if (q[1] > mx) mx = q[1]; }); mx = Math.max(mx, 1);
+    plot($("p"), 210, [{ color: cssv("--blue"), d: curve.map(function (q) { return [q[0], q[1] / mx]; }) }, { color: cssv("--coral"), d: curve.map(function (q) { return [q[0], (q[2] + 1) / 2]; }) }],
+      { x: [-30, 30], y: [0, 1.12], xt: [-30, -15, 0, 15, 30], legend: [[cssv("--blue"), "Error"], [cssv("--coral"), "Correlation"]], dots: [{ x: s, y: c.error / mx, color: cssv("--blue") }, { x: s, y: (c.zncc + 1) / 2, color: cssv("--coral") }] });
+  }
+  $("s").addEventListener("input", draw);
+  $("bright").addEventListener("click", function () { var on = bright === 1; bright = on ? 1.4 : 1; this.setAttribute("aria-pressed", String(on)); build(); draw(); });
+  build(); draw();
+  addEventListener("resize", draw);
+})();
+</script>

@@ -1,0 +1,47 @@
+<header>
+  <div class="ep">Lesson 5</div>
+  <h1>Speed Flags</h1>
+  <p class="lede"><code>-np</code> sets how many workers run at the same time.</p>
+</header>
+<section>
+  <h2>More workers, faster job</h2>
+  <vox>Painting a long fence alone takes a whole day. Four friends finish much sooner, because each paints their own bit. SPAM's windows are like fence panels: each is a separate job. But friends get in each other's way, so 100 friends won't finish in a minute!</vox>
+  <div class="term"><span class="p">$ spam-ldic</span> <span class="v">unloaded.tif loaded.tif</span> <span class="fl">-np</span> <span class="v">4</span> <span class="fl">-pf</span> <span class="v">reg-registration.tsv</span> <span class="fl">-hws</span> <span class="v">25</span> <span class="fl">-ns</span> <span class="v">25</span></div>
+  <p>If you leave out <code>-np</code>, SPAM uses every core your computer has, and it can make your laptop hot and loud.</p>
+</section>
+<section>
+  <h2>Real timings</h2>
+  <div class="lab">
+    <canvas id="p" role="img" aria-label="Run time against number of workers"></canvas>
+    <div class="wrap"><table id="t"></table></div>
+  </div>
+  <vox>Going from 1 to 4 workers was 3.5 times faster, but going from 4 to 6 only saved about a second. The same answers come out whichever number you pick, since <code>-np</code> only changes how fast they arrive.</vox>
+</section>
+<section>
+  <h2>How to choose</h2>
+  <div class="wrap"><table>
+    <thead><tr><th scope="col">Situation</th><th scope="col">Try</th></tr></thead>
+    <tbody>
+      <tr><th scope="row">Laptop while you're using it</th><td>About half your cores</td></tr>
+      <tr><th scope="row">Quick test on a small scan</th><td>2 to 4</td></tr>
+      <tr><th scope="row">Server or cluster</th><td>The cores you've been given</td></tr>
+      <tr><th scope="row">Out of memory</th><td>Fewer workers, or use <code>-lazy</code></td></tr>
+    </tbody>
+  </table></div>
+  <real t="spam/DIC/ldic.py">Workers come from Python's <code>multiprocessing.Pool(processes)</code>. Nodes are handed out as workers become free, and they finish in any order. Results are still saved against the right node. <code>-lazy</code> reads the images from disk through <code>tifffile.memmap</code>, instead of loading them fully into memory.</real>
+</section>
+<section>
+  <h2>Remember this</h2>
+  <ul class="keys">
+    <li><code>-np</code> changes speed, not the answer.</li>
+    <li>Extra workers help less and less.</li>
+    <li>On a shared machine, always set it yourself.</li>
+  </ul>
+</section>
+<script>
+(function () {
+  function draw() { plot($("p"), 210, [{ color: cssv("--blue"), d: NP.map(function (r) { return [r.np, r.time]; }) }], { x: [0, 7], y: [0, 28], xt: [1, 2, 4, 6], yt: [0, 10, 20], legend: [[cssv("--blue"), "Run time in seconds"]], dots: NP.map(function (r) { return { x: r.np, y: r.time, color: cssv("--blue") }; }) }); }
+  draw(); addEventListener("resize", draw);
+  $("t").innerHTML = "<thead><tr><th>-np</th><th class=n>Time</th><th class=n>Faster than 1 worker</th></tr></thead><tbody>" + NP.map(function (r) { return "<tr><th>" + r.np + "</th><td class=n>" + r.time + " s</td><td class=n>" + (NP[0].time / r.time).toFixed(1) + " times</td></tr>"; }).join("") + "</tbody>";
+})();
+</script>

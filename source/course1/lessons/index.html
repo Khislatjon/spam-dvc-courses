@@ -1,0 +1,32 @@
+<header>
+  <div class="ep">A free hands-on course &middot; about 90 minutes</div>
+  <h1>SPAM DVC Course</h1>
+  <p class="lede">Learn how SPAM tracks bone inside a CT scan, one small idea at a time.</p>
+</header>
+<vox>Hi, I'm Vox, a very small cube of bone scan. My job is to find out where each piece of bone went when the vertebra was squeezed. Press the buttons, drag the sliders and break things. That's how this works best.</vox>
+<section>
+  <h2>Follow the path</h2>
+  <div class="map">
+    <a class="stop" href="@1_sticker_game"><span class="d">1</span><span><b>The Sticker Game</b><span class="m">What DVC measures. Find a moved sticker yourself.</span></span><span class="t">10 min</span></a>
+    <a class="stop" href="@2_scoring_a_match"><span class="d">2</span><span><b>Scoring a Match</b><span class="m">How a computer knows two patches match.</span></span><span class="t">10 min</span></a>
+    <a class="stop" href="@3_phi_instruction_card"><span class="d">3</span><span><b>Phi, the Instruction Card</b><span class="m">The 12 numbers SPAM solves for.</span></span><span class="t">10 min</span></a>
+    <a class="stop" href="@4_the_hiker"><span class="d">4</span><span><b>The Hiker in the Fog</b><span class="m">How SPAM improves a guess, step by step.</span></span><span class="t">15 min</span></a>
+    <a class="stop" href="@5_blurry_glasses"><span class="d">5</span><span><b>The Blurry Glasses</b><span class="m">Why registration starts with blurred scans.</span></span><span class="t">10 min</span></a>
+    <a class="stop" href="@6_army_of_windows"><span class="d">6</span><span><b>The Army of Windows</b><span class="m">Nodes, windows, masks and parallel workers.</span></span><span class="t">10 min</span></a>
+    <a class="stop" href="@7_treasure_search"><span class="d">7</span><span><b>The Treasure Search</b><span class="m">Pixel search, with a video of real SPAM iterations.</span></span><span class="t">15 min</span></a>
+    <a class="stop" href="@8_whole_film"><span class="d">8</span><span><b>The Whole Film</b><span class="m">Everything together, how far to trust it, and a quiz.</span></span><span class="t">10 min</span></a>
+  </div>
+</section>
+<section>
+  <h2>How each lesson works</h2>
+  <ul class="keys">
+    <li><b>Vox</b> explains the idea in everyday words.</li>
+    <li><b>Labs</b> let you try it. The numbers are calculated live, using the same maths as SPAM but on small 2D images.</li>
+    <li><b>Real SPAM</b> boxes show where the idea lives in SPAM's code and in its output files.</li>
+  </ul>
+</section>
+<real t="what this course is based on">The lessons were written from the code of SPAM 0.8.1.4, mainly <code>spam/DIC/registration.py</code>, <code>ldic.py</code>, <code>pixelSearch.py</code> and <code>grid.py</code>. The heaviest calculations are compiled, so a few low-level details could not be read directly. The labs use made-up 2D images and solve 2 numbers per window, where SPAM solves 12. The video in Lesson 7 is real SPAM running on a made-up 3D volume.</real>
+<section>
+  <h2>Credits</h2>
+  <p>SPAM (Software for Practical Analysis of Materials) is open-source software by its own developers. If you use it, please cite Stamati et al., <i>spam: Software for Practical Analysis of Materials</i>, Journal of Open Source Software, 2020. This course is an independent teaching resource, and is not made by or endorsed by the SPAM team. For anything important, check the official documentation.</p>
+</section>

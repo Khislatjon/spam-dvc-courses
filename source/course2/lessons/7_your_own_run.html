@@ -1,0 +1,91 @@
+<header>
+  <div class="ep">Lesson 7</div>
+  <h1>Build Your Own Run</h1>
+  <p class="lede">Put it all together: build the commands, fix what goes wrong, and test yourself.</p>
+</header>
+<section>
+  <h2>Command builder</h2>
+  <p>Answer the questions, and your commands appear below. They're a starting point, so check the results on your own scans.</p>
+  <div class="lab">
+    <div class="row">
+      <label class="tile">Unloaded scan<input id="u" type="text" value="unloaded.tif" style="font:inherit;padding:6px;border:2px solid var(--line);border-radius:8px;background:var(--soft);color:var(--fg)"></label>
+      <label class="tile">Loaded scan<input id="l" type="text" value="loaded.tif" style="font:inherit;padding:6px;border:2px solid var(--line);border-radius:8px;background:var(--soft);color:var(--fg)"></label>
+      <label class="tile">Run name<input id="n" type="text" value="myrun" style="font:inherit;padding:6px;border:2px solid var(--line);border-radius:8px;background:var(--soft);color:var(--fg)"></label>
+    </div>
+    <div class="row">
+      <label class="tile">How far does it move overall?<select id="mv"><option value="4">Up to about 30 voxels</option><option value="2">Just a few voxels</option><option value="8">More than that</option></select></label>
+      <label class="tile">Have a mask?<select id="mk"><option value="1">Yes: mask.tif</option><option value="0">No</option></select></label>
+      <label class="tile">Large local movement?<select id="ps"><option value="0">No</option><option value="1">Yes: use pixel search</option></select></label>
+    </div>
+    <label class="s">Half-window<input id="h" type="range" min="5" max="40" step="1" value="25"><output></output></label>
+    <label class="s">Node spacing<input id="s" type="range" min="10" max="100" step="2" value="50"><output></output></label>
+    <label class="s">Workers<input id="w" type="range" min="1" max="16" step="1" value="4"><output></output></label>
+    <div class="term" id="out"></div>
+    <div class="ctrl"><button id="copy" type="button">Copy commands</button><span id="c1" class="note" aria-live="polite"></span></div>
+    <p id="warn" class="note"></p>
+  </div>
+</section>
+<section>
+  <h2>Fix-it guide</h2>
+  <div class="wrap"><table>
+    <thead><tr><th scope="col">What you see</th><th scope="col">Likely cause</th><th scope="col">Try</th></tr></thead>
+    <tbody>
+      <tr><th scope="row">Registration status 1</th><td>Started too sharp</td><td>A higher <code>-bb</code></td></tr>
+      <tr><th scope="row">Almost no nodes converge</th><td>Missing or poor first guess</td><td>Check <code>-pf</code></td></tr>
+      <tr><th scope="row">Many fail in one region</th><td>Large local movement</td><td>Pixel search with <code>-sr</code></td></tr>
+      <tr><th scope="row">Many fail across the sample</th><td>Windows too small</td><td>A larger <code>-hws</code></td></tr>
+      <tr><th scope="row">Field looks too smooth</th><td>Windows too large</td><td>A smaller <code>-hws</code></td></tr>
+      <tr><th scope="row">Lots of time spent on air</th><td>No mask, or <code>-glt</code> too low</td><td><code>-mf1</code>, or check air's grey value</td></tr>
+      <tr><th scope="row">Lost nodes near the surface</th><td><code>-mc</code> too high</td><td>Lower it towards 0.5</td></tr>
+      <tr><th scope="row">No results file, no crash</th><td>Node spacing clash</td><td>Read the output, and check <code>-pfb</code></td></tr>
+      <tr><th scope="row">Nodes in only one corner</th><td>Missing <code>-pfb</code> and <code>-ns</code></td><td>Add both</td></tr>
+      <tr><th scope="row">Laptop very hot</th><td>Too many workers</td><td>A lower <code>-np</code></td></tr>
+    </tbody>
+  </table></div>
+</section>
+<section>
+  <h2>Cheat sheet</h2>
+  <div class="wrap"><table>
+    <thead><tr><th scope="col">Flag</th><th scope="col">Used by</th><th scope="col">Meaning</th></tr></thead>
+    <tbody>
+      <tr><th scope="row"><code>-bb</code>, <code>-be</code></th><td><code>spam-reg</code></td><td>Binning to begin and end with</td></tr>
+      <tr><th scope="row"><code>-pf</code></th><td>All</td><td>File holding the first guess</td></tr>
+      <tr><th scope="row"><code>-pfb</code></th><td>All</td><td>New size &divide; size of the file's images</td></tr>
+      <tr><th scope="row"><code>-hws</code></th><td><code>ldic</code>, search</td><td>Half-window size</td></tr>
+      <tr><th scope="row"><code>-ns</code></th><td><code>ldic</code>, search</td><td>Node spacing</td></tr>
+      <tr><th scope="row"><code>-sr</code></th><td>Search</td><td>Range: z min, z max, y min, y max, x min, x max</td></tr>
+      <tr><th scope="row"><code>-mf1</code></th><td>All</td><td>Mask for image 1</td></tr>
+      <tr><th scope="row"><code>-mc</code></th><td><code>ldic</code>, search</td><td>Fraction of a window that must be unmasked</td></tr>
+      <tr><th scope="row"><code>-glt</code></th><td><code>ldic</code>, search</td><td>Skip windows darker than this</td></tr>
+      <tr><th scope="row"><code>-np</code></th><td><code>ldic</code>, search</td><td>Number of workers</td></tr>
+      <tr><th scope="row"><code>-od</code>, <code>-pre</code></th><td>All</td><td>Output folder, and start of file names</td></tr>
+    </tbody>
+  </table></div>
+</section>
+<section>
+  <h2>Final quiz</h2>
+  <div id="quiz" class="quiz"></div>
+  <div class="msg" id="score" aria-live="polite"></div>
+</section>
+<section>
+  <h2>You did it</h2>
+  <vox>You can now read a SPAM command and predict what it will do. Try it on your own scans, starting small: test one sample, check the status and node map, then change one flag at a time.</vox>
+</section>
+<script>
+(function () {
+  var ids = ["u", "l", "n", "mv", "mk", "ps", "h", "s", "w"];
+  function draw() {
+    var u = $("u").value || "unloaded.tif", l = $("l").value || "loaded.tif", n = $("n").value || "myrun", bb = +$("mv").value, mk = +$("mk").value, ps = +$("ps").value, h = +$("h").value, s = +$("s").value, w = +$("w").value;
+    $("h").nextElementSibling.textContent = h; $("s").nextElementSibling.textContent = s; $("w").nextElementSibling.textContent = w;
+    var mf = mk ? " -mf1 mask.tif" : "", mc = mk ? " -mc 0.5" : "", be = bb === 2 ? 2 : 2, L = ["spam-reg " + u + " " + l + mf + " -bb " + bb + " -be " + be + " -pre " + n];
+    if (ps) { L.push("# First make half-size copies of your images: u2.tif, l2.tif" + (mk ? " and m2.tif" : "")); L.push("spam-pixelSearch u2.tif l2.tif" + (mk ? " -mf1 m2.tif -mc 0.5" : "") + " -pf " + n + "-registration.tsv -pfb 0.5 -sr -5 5 -18 18 -5 5 -ns " + Math.round(s / 2) + " -hws " + Math.floor(h / 2) + " -np " + w + " -pre " + n + "_ps"); L.push("spam-ldic " + u + " " + l + mf + mc + " -pf " + n + "_ps-pixelSearch.tsv -pfb 2 -ns " + (Math.round(s / 2) * 2) + " -hws " + h + " -np " + w + " -pre " + n); }
+    else L.push("spam-ldic " + u + " " + l + mf + mc + " -pf " + n + "-registration.tsv -ns " + s + " -hws " + h + " -np " + w + " -pre " + n);
+    var o = $("out"); o.textContent = ""; L.forEach(function (t, i) { var e = document.createElement("div"); e.textContent = (t[0] === "#" ? "" : "$ ") + t; if (t[0] === "#") e.className = "c"; o.appendChild(e); }); o.dataset.text = L.join("\n");
+    var msgs = []; if (s < 2 * h + 1) msgs.push("Your windows overlap, so neighbouring nodes share voxels."); if (ps) msgs.push("Set -sr from your own sample. The range shown is only an example."); if (!mk) msgs.push("With no mask, consider -glt, after checking the grey value of air."); $("warn").textContent = msgs.join(" ");
+  }
+  ids.forEach(function (i) { $(i).addEventListener("input", draw); }); draw();
+  $("copy").addEventListener("click", function () { var t = $("out").dataset.text; navigator.clipboard.writeText(t).then(function () { $("c1").textContent = "Copied."; }, function () { var r = document.createRange(); r.selectNodeContents($("out")); var s = getSelection(); s.removeAllRanges(); s.addRange(r); $("c1").textContent = "Selected. Press copy on your keyboard."; }); });
+  var Q = [["In -hws 25, how wide is the window?", ["25 voxels", "50 voxels", "51 voxels"], 2, "Width = 2 × 25 + 1 = 51."], ["What does -bb 4 -be 2 mean?", ["Start at bin 4, finish at bin 2", "Run 4 times, then 2 times", "Use 4 cores, then 2"], 0, "It goes from blurry to sharper."], ["You forgot -pf on a sample that moved 15 voxels. What happens?", ["SPAM stops with an error", "It runs, but results are poor", "It works fine"], 1, "In our test, 0 of 44 windows converged."], ["-mc 0.75 means...", ["At least 75% of a window must be unmasked", "75% of nodes are skipped", "The mask is 75% of the scan"], 0, "Windows below that are skipped with status −5."], ["Does -np change the answer?", ["Yes", "No, only the speed", "Only with a mask"], 1, "It only changes how many workers run at once."], ["Your Phi file came from half-size images, and you're now on full size. What's -pfb?", ["0.5", "1", "2"], 2, "New size ÷ old size = 2."], ["-sr has how many numbers?", ["3", "6", "12"], 1, "Min and max for z, y and x."], ["Why not just use a huge -sr?", ["It's slow and allows false matches", "It breaks the mask", "It changes the voxel size"], 0, "In our test, it took 60 s for the same answer as 1.3 s."], ["You see no results file and no crash. What's first?", ["Buy more memory", "Read the printed output", "Delete the mask"], 1, "SPAM prints a helpful message, even when it exits normally."]], box = $("quiz"), right = 0, seen = 0;
+  Q.forEach(function (q, i) { var w = document.createElement("div"); w.className = "lab"; var h = document.createElement("h3"); h.textContent = (i + 1) + ". " + q[0]; w.appendChild(h); var res = document.createElement("p"); q[1].forEach(function (a, k) { var b = document.createElement("button"); b.type = "button"; b.textContent = a; b.addEventListener("click", function () { if (w.dataset.done) return; w.dataset.done = 1; seen++; if (k === q[2]) { right++; b.className = "right"; res.textContent = "Yes! " + q[3]; } else { b.className = "wrong"; w.querySelectorAll("button")[q[2]].className = "right"; res.textContent = "Not quite. " + q[3]; } if (seen === Q.length) $("score").textContent = "You scored " + right + " out of " + Q.length + "."; }); w.appendChild(b); }); w.appendChild(res); box.appendChild(w); });
+})();
+</script>

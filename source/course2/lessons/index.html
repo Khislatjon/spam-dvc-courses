@@ -1,0 +1,24 @@
+<header>
+  <div class="ep">Course 2 &middot; about 75 minutes</div>
+  <h1>SPAM Commands Course</h1>
+  <p class="lede">You know how SPAM works. Now learn to drive it from the command line, one flag at a time.</p>
+</header>
+<vox>Welcome back! In the first course, you played with the ideas. This time, you'll meet the real commands. Every lab shows real results from running SPAM, so when you change a flag, you see what really happened.</vox>
+<section>
+  <h2>Follow the path</h2>
+  <div class="map">
+    <a class="stop" href="@1_reading_a_command"><span class="d">1</span><span><b>Reading a Command</b><span class="m">Tap any part of a command to see what it does.</span></span><span class="t">10 min</span></a>
+    <a class="stop" href="@2_spam_reg"><span class="d">2</span><span><b>Registration Flags</b><span class="m"><code>-bb</code> and <code>-be</code>: where to start and stop blurring.</span></span><span class="t">10 min</span></a>
+    <a class="stop" href="@3_spam_ldic"><span class="d">3</span><span><b>Local DVC Flags</b><span class="m"><code>-hws</code>, <code>-ns</code> and <code>-pf</code>: windows, spacing and the first guess.</span></span><span class="t">15 min</span></a>
+    <a class="stop" href="@4_masks"><span class="d">4</span><span><b>Mask Flags</b><span class="m"><code>-mf1</code>, <code>-mc</code> and <code>-glt</code>: skipping what you don't need.</span></span><span class="t">10 min</span></a>
+    <a class="stop" href="@5_speed"><span class="d">5</span><span><b>Speed Flags</b><span class="m"><code>-np</code>: how many workers to use.</span></span><span class="t">5 min</span></a>
+    <a class="stop" href="@6_pixel_search"><span class="d">6</span><span><b>Pixel Search Flags</b><span class="m"><code>-sr</code> and <code>-pfb</code>: search range and scaling.</span></span><span class="t">15 min</span></a>
+    <a class="stop" href="@7_your_own_run"><span class="d">7</span><span><b>Build Your Own Run</b><span class="m">A command builder, a troubleshooting guide and a quiz.</span></span><span class="t">10 min</span></a>
+  </div>
+</section>
+<section>
+  <h2>About the test sample</h2>
+  <p>Every result comes from a made-up 3D sample of 240 &times; 220 &times; 220 voxels: a sponge-like cylinder in air. Because it's made up, the <b>true movement at every point is known</b>, so we can measure how right each run was. That's rarely possible with real scans.</p>
+  <p>The sample was squashed, shifted and given a local bulge, then noise was added. Runs were done on a laptop with SPAM 0.8.1.4, so your times will differ.</p>
+</section>
+<real t="credits">SPAM (Software for Practical Analysis of Materials) is open-source software by its own developers. If you use it, please cite Stamati et al., <i>spam: Software for Practical Analysis of Materials</i>, Journal of Open Source Software, 2020. This course is independent, and is not made by or endorsed by the SPAM team. Check the official documentation for anything important.</real>

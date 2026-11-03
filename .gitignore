@@ -1,0 +1,9 @@
+.DS_Store
+__pycache__/
+*.pyc
+source/**/dist/
+source/**/dist_*/
+source/**/public_dist/
+source/**/public_dist_*/
+*.tif
+*.tiff

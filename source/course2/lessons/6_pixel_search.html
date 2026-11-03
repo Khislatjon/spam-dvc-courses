@@ -1,0 +1,113 @@
+<header>
+  <div class="ep">Lesson 6</div>
+  <h1>Pixel Search Flags</h1>
+  <p class="lede">When local movement is large, set how far to search with <code>-sr</code>, and keep your scaling right with <code>-pfb</code>.</p>
+</header>
+<section>
+  <h2>Do you need pixel search?</h2>
+  <vox>Don't start with pixel search. It's slower, and most runs don't need it. Run normally first, then look for warning signs. Only add a search if they point to a problem.</vox>
+  <div class="wrap"><table>
+    <thead><tr><th scope="col" class="n">Step</th><th scope="col">What to do</th></tr></thead>
+    <tbody>
+      <tr><td class="n">1</td><td>Run <code>spam-reg</code> and then <code>spam-ldic</code>, as in Lesson 3.</td></tr>
+      <tr><td class="n">2</td><td>Check the warning signs below.</td></tr>
+      <tr><td class="n">3</td><td>If several signs gather in one region, add a pixel search and run <code>spam-ldic</code> again.</td></tr>
+    </tbody>
+  </table></div>
+  <h3>Warning signs, with numbers from the harder sample</h3>
+  <div class="wrap"><table>
+    <thead><tr><th scope="col">Sign</th><th scope="col">Failed nodes</th><th scope="col">Good nodes</th><th scope="col">How reliable</th></tr></thead>
+    <tbody>
+      <tr><th scope="row"><code>returnStatus</code> 1, hitting the iteration limit</th><td>All 4</td><td>None</td><td>Strong, especially when grouped in one region</td></tr>
+      <tr><th scope="row">A jump from the neighbouring nodes</th><td>4.7&ndash;13.2 vx</td><td>Typically 1.2 vx, up to 9.8 vx</td><td>A good hint, but large real movement can also cause jumps</td></tr>
+      <tr><th scope="row">High <code>error</code></th><td>45&ndash;113</td><td>Typically 2.2, up to 46.8</td><td>A hint, because difficult texture can also raise it</td></tr>
+      <tr><th scope="row">Registration not converged</th><td colspan="2">Registration status 1 instead of 2</td><td>Means every window starts from a weak guess</td></tr>
+      <tr><th scope="row">You know the sample has large local movement</th><td colspan="2">A fracture, a lesion, a collapse or a sliding crack</td><td>A good reason to plan a search from the start</td></tr>
+    </tbody>
+  </table></div>
+  <p>All 4 failed nodes sat where the sample bulged, which is exactly where one registration guess was too far off. Here's a slice through that region:</p>
+  <div class="lab">
+    <div class="ctrl"><button id="nm1" type="button" aria-pressed="true">Without a search</button><button id="nm2" type="button" aria-pressed="false">With a search</button></div>
+    <canvas id="nm" role="img" aria-label="Map of nodes in one slice, coloured by whether they were right"></canvas>
+    <p class="note"><span class="good">Green</span> is within 2 vx of the truth, <span class="bad">red</span> is wrong, and a ring means it hit the iteration limit. The shaded area is where the extra local movement is largest.</p>
+  </div>
+  <vox>Look closely after the search: 2 nodes are still wrong, but they report status 2, which says "fine"! Their jumps from the neighbours, 11.6 and 10.6 vx, are what gave them away. So check jumps after a search too, and view the arrows if you can. Problems are much easier to spot in a picture than in a table.</vox>
+</section>
+<section>
+  <h2>A two-step run</h2>
+  <p>Searching at full size is very slow, so a common plan is to search half-size images, then refine at full size. That needs half-size copies of your scans and mask, made by averaging each 2 &times; 2 &times; 2 block, and three commands:</p>
+  <div class="term"><span class="c"># 1. One Phi for the whole scan, at full size</span>
+<span class="p">$ spam-reg</span> <span class="v">unloaded.tif loaded.tif</span> <span class="fl">-mf1</span> <span class="v">mask.tif</span> <span class="fl">-bb</span> <span class="v">4</span> <span class="fl">-be</span> <span class="v">2</span> <span class="fl">-pre</span> <span class="v">reg</span>
+
+<span class="c"># 2. Search on half-size images, so ns and hws are halved too</span>
+<span class="p">$ spam-pixelSearch</span> <span class="v">u2.tif l2.tif</span> <span class="fl">-mf1</span> <span class="v">m2.tif</span> <span class="fl">-pf</span> <span class="v">reg-registration.tsv</span> <span class="fl">-pfb</span> <span class="v">0.5</span> \
+    <span class="fl">-sr</span> <span class="v">-5 5 -18 18 -5 5</span> <span class="fl">-ns</span> <span class="v">25</span> <span class="fl">-hws</span> <span class="v">12</span> <span class="fl">-pre</span> <span class="v">ps</span>
+
+<span class="c"># 3. Refine at full size, starting from the search</span>
+<span class="p">$ spam-ldic</span> <span class="v">unloaded.tif loaded.tif</span> <span class="fl">-mf1</span> <span class="v">mask.tif</span> <span class="fl">-pf</span> <span class="v">ps-pixelSearch.tsv</span> <span class="fl">-pfb</span> <span class="v">2</span> \
+    <span class="fl">-ns</span> <span class="v">50</span> <span class="fl">-hws</span> <span class="v">25</span> <span class="fl">-pre</span> <span class="v">final</span></div>
+</section>
+<section>
+  <h2><code>-sr</code>: how far to search</h2>
+  <p>It takes six numbers: minimum and maximum in z, then y, then x, in voxels of the image being searched. They are measured from the current guess.</p>
+  <vox><code>-sr -5 5 -18 18 -5 5</code> means "look 5 voxels either way in z, 18 in y and 5 in x." On half-size images, that's really 10, 36 and 10 voxels. Searching a long thin box is far quicker than a big cube.</vox>
+  <h3>Real results on a harder sample</h3>
+  <p>In this harder sample, one region moved about 30 voxels beyond the rest.</p>
+  <div class="lab">
+    <div class="ctrl" id="b"></div>
+    <div class="nums"><div class="num">Positions per window<span id="a1"></span></div><div class="num">Search time<span id="a2"></span></div><div class="num">Converged<span id="a3"></span></div><div class="num">Hit the limit<span id="a4"></span></div><div class="num">Typical miss<span id="a5"></span></div><div class="num">Wrong by over 2 vx<span id="a6"></span></div></div>
+    <div class="msg" id="m" aria-live="polite"></div>
+  </div>
+  <vox>The search cut the miss from 4.5 to about 0.8 voxels. Even the small range helped here, because it brought windows close enough for the hiker to finish the job. Now look at the huge range: it took 60 seconds, but gave the same answer as the 1.3 second search. A sample with more repeating pattern can also pick up false matches from a huge range.</vox>
+</section>
+<section>
+  <h2><code>-pfb</code>: keeping the scale right</h2>
+  <p>A displacement of 10 voxels at half size is 20 voxels at full size. <code>-pfb</code> tells SPAM how to scale a Phi file.</p>
+  <div class="f">-pfb = (size of the current images) &divide; (size of the images that made the file)</div>
+  <div class="wrap"><table>
+    <thead><tr><th scope="col">File came from</th><th scope="col">Used on</th><th scope="col" class="n">-pfb</th></tr></thead>
+    <tbody>
+      <tr><td>Full size</td><td>Half size</td><td class="n">0.5</td></tr>
+      <tr><td>Half size</td><td>Full size</td><td class="n">2</td></tr>
+      <tr><td>Same size</td><td>Same size</td><td class="n">1 (default)</td></tr>
+    </tbody>
+  </table></div>
+</section>
+<section>
+  <h2>Two real traps</h2>
+  <h3>Trap 1: forget <code>-pfb</code> but keep <code>-ns</code></h3>
+  <div class="term"><span class="e">spam-ldic: you passed a -ns=[50, 50, 50] which contradicts the node spacing in your Phi Field TSV of [25. 25. 25.]
+	hint 1: if you pass a Phi Field TSV you don't need to also define the node spacing</span></div>
+  <p>This one is helpful, but SPAM still exits as if all went well and writes no results file. If your script carries on, it will fail later, so read the output.</p>
+  <h3>Trap 2: forget both <code>-pfb</code> and <code>-ns</code></h3>
+  <p>This is worse. It runs with no complaint, and the numbers look fine. But the nodes keep their half-size positions, at 25, 50, 75 and 100 voxels, so it measures <b>only one corner of the sample</b>. In the real test, just 19 nodes converged, and the rest of the sample was never measured.</p>
+  <vox>Both traps are about mixing sizes. After any run, check two things: how many nodes you got, and whether they cover your whole sample.</vox>
+</section>
+<section>
+  <h2>Remember this</h2>
+  <ul class="keys">
+    <li><code>-sr</code> takes six numbers: z min, z max, y min, y max, x min, x max.</li>
+    <li>The range is in voxels of the images being searched.</li>
+    <li><code>-pfb</code> is new size &divide; old size.</li>
+    <li>Halve <code>-ns</code> and <code>-hws</code> on half-size images.</li>
+    <li>Search only when warning signs gather in one region, then check again.</li>
+  </ul>
+</section>
+<script>
+(function () {
+  var opts = [["No search", DATA0], ["Small: -sr -3 3 -3 3 -3 3", DATA1[0]], ["About right: -sr -5 5 -18 18 -5 5", DATA1[1]], ["Huge: -sr -40 40 -40 40 -40 40", DATA1[2]]], box = $("b");
+  function show(o, b) { var r = o[1]; box.querySelectorAll("button").forEach(function (x) { x.setAttribute("aria-pressed", "false"); }); b.setAttribute("aria-pressed", "true"); $("a1").textContent = r.positions ? r.positions.toLocaleString() : "–"; $("a2").textContent = r.t_search ? r.t_search + " s" : "–"; $("a3").textContent = r.conv + " of " + r.tried; $("a4").textContent = r.limit; $("a5").textContent = r.rms.toFixed(2) + " vx"; $("a6").textContent = r.wrong; $("m").textContent = r.positions ? (r.t_search > 30 ? "The same answer, but about 46 times slower." : "The search gave each window a good start.") : "Local windows near the bulge started too far away."; $("m").style.color = r.positions ? "" : "var(--coral)"; }
+  function nmap(k) {
+    var M = NODEMAP[k], G = fitCanvas($("nm"), 330), g = G.x, W = G.w, cell = Math.min(62, (W - 120) / 4), ox = (W - cell * 4) / 2 + 20, oy = 30;
+    g.clearRect(0, 0, W, 330); g.fillStyle = cssv("--muted"); g.font = "13px " + cssv("--text"); g.textAlign = "center";
+    g.fillText("y (voxels) \u2192", ox + cell * 2, 324); g.save(); g.translate(ox - 52, oy + cell * 2); g.rotate(-Math.PI / 2); g.fillText("z (voxels) \u2192", 0, 0); g.restore();
+    [50, 100, 150, 200].forEach(function (v, i) { g.fillText(v, ox + (i + .5) * cell, oy + cell * 4 + 18); g.textAlign = "right"; g.fillText(v, ox - 8, oy + (i + .5) * cell + 4); g.textAlign = "center"; });
+    var cx = ox + ((150 - 25) / 50) * cell, cy = oy + ((120 - 25) / 50) * cell; g.fillStyle = "rgba(255,193,77,.18)"; g.beginPath(); g.ellipse(cx, cy, cell * 1.1, cell * 1.2, 0, 0, 7); g.fill();
+    M.forEach(function (q) { var x = ox + ((q[1] - 25) / 50) * cell, y = oy + ((q[0] - 25) / 50) * cell; if (q[3] === null) { g.strokeStyle = cssv("--line"); g.lineWidth = 1.5; g.beginPath(); g.arc(x, y, 5, 0, 7); g.stroke(); return; } var ok = q[3] < 2; g.fillStyle = ok ? cssv("--mint") : cssv("--coral"); g.beginPath(); g.arc(x, y, 10, 0, 7); g.fill(); if (q[2] === 1) { g.strokeStyle = cssv("--coral"); g.lineWidth = 3; g.beginPath(); g.arc(x, y, 16, 0, 7); g.stroke(); } });
+  }
+  var nk = "none"; $("nm1").addEventListener("click", function () { nk = "none"; this.setAttribute("aria-pressed", "true"); $("nm2").setAttribute("aria-pressed", "false"); nmap(nk); });
+  $("nm2").addEventListener("click", function () { nk = "search"; this.setAttribute("aria-pressed", "true"); $("nm1").setAttribute("aria-pressed", "false"); nmap(nk); });
+  nmap(nk); addEventListener("resize", function () { nmap(nk); });
+  opts.forEach(function (o, i) { var b = document.createElement("button"); b.type = "button"; b.textContent = o[0]; b.addEventListener("click", function () { show(o, b); }); box.appendChild(b); if (i === 2) show(o, b); });
+})();
+</script>

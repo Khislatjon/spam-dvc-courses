@@ -1,0 +1,55 @@
+<header>
+  <div class="ep">Lesson 2</div>
+  <h1>Registration Flags</h1>
+  <p class="lede"><code>-bb</code> says how blurry to begin, and <code>-be</code> says how sharp to end.</p>
+</header>
+<section>
+  <h2>The basic command</h2>
+  <div class="term"><span class="p">$ spam-reg</span> <span class="v">unloaded.tif loaded.tif</span> <span class="fl">-mf1</span> <span class="v">mask.tif</span> <span class="fl">-bb</span> <span class="v">4</span> <span class="fl">-be</span> <span class="v">2</span> <span class="fl">-od</span> <span class="v">.</span> <span class="fl">-pre</span> <span class="v">reg</span></div>
+  <vox>Remember the blurry glasses? <code>-bb</code> means binning begin, and <code>-be</code> means binning end. <code>-bb 4 -be 2</code> says: "Start at bin 4, then finish at bin 2." Use powers of 2: 1, 2, 4, 8 or 16.</vox>
+  <div class="wrap"><table>
+    <thead><tr><th scope="col">Flag</th><th scope="col">Means</th><th scope="col" class="n">Default</th></tr></thead>
+    <tbody>
+      <tr><th scope="row"><code>-bb</code></th><td>Starting binning level</td><td class="n">4</td></tr>
+      <tr><th scope="row"><code>-be</code></th><td>Final binning level</td><td class="n">1</td></tr>
+    </tbody>
+  </table></div>
+</section>
+<section>
+  <h2>Try real settings</h2>
+  <p>In this sample, the true movement at the centre was about 21 voxels in y. Pick a pair of settings to see what really happened.</p>
+  <div class="lab">
+    <div class="ctrl" id="b"></div>
+    <div class="nums"><div class="num">Status<span id="a1"></span></div><div class="num">Y displacement<span id="a2"></span></div><div class="num">Miss from the truth<span id="a3"></span></div><div class="num">Error<span id="a4"></span></div><div class="num">Iterations (last level)<span id="a5"></span></div><div class="num">Time<span id="a6"></span></div></div>
+    <div class="msg" id="m" aria-live="polite"></div>
+  </div>
+  <vox>Starting sharp fails here: <code>-bb 1</code> misses by over 16 voxels after 50 iterations. Once you start at bin 4, going higher adds nothing. Finishing at bin 1 took more than twice as long and wasn't better, so stopping at bin 2 is a good choice here. Don't worry about the miss of about 4.6 voxels. Registration only gives one Phi for the whole sample, and the local bulge can't fit into it. It's just the first guess.</vox>
+</section>
+<section>
+  <h2>How to choose</h2>
+  <div class="wrap"><table>
+    <thead><tr><th scope="col">Situation</th><th scope="col">Try</th></tr></thead>
+    <tbody>
+      <tr><th scope="row">Small movement</th><td><code>-bb 2 -be 2</code> may be enough, but check the status</td></tr>
+      <tr><th scope="row">Typical movement</th><td><code>-bb 4 -be 2</code> is a good start</td></tr>
+      <tr><th scope="row">Very large movement</th><td><code>-bb 8</code> or more</td></tr>
+      <tr><th scope="row">Noisy image or a small sample</th><td>Be careful with high binning, which can erase the pattern</td></tr>
+    </tbody>
+  </table></div>
+  <real t="other useful flags"><code>-rig</code> finds only movement and rotation, with no stretch. <code>-it</code> sets the iteration limit, default 50. <code>-dp</code> sets the stopping step, default 0.0001 for <code>spam-reg</code>, while <code>spam-ldic</code> uses 0.001. <code>-g</code> shows iterations in a graph window.</real>
+</section>
+<section>
+  <h2>Remember this</h2>
+  <ul class="keys">
+    <li>Check for <code>returnStatus</code> 2 before going on.</li>
+    <li>Registration is a first guess, so it doesn't need to be perfect.</li>
+    <li>Start blurry enough, but don't overdo it.</li>
+  </ul>
+</section>
+<script>
+(function () {
+  var box = $("b");
+  function show(r, btn) { box.querySelectorAll("button").forEach(function (x) { x.setAttribute("aria-pressed", "false"); }); btn.setAttribute("aria-pressed", "true"); $("a1").textContent = r.status + (r.status === 2 ? " converged" : " at limit"); $("a2").textContent = fmt(r.Y, 2) + " vx"; $("a3").textContent = fmt(r.err_t, 1) + " vx"; $("a4").textContent = r.error.toFixed(2); $("a5").textContent = r.iters; $("a6").textContent = r.time + " s"; $("m").textContent = r.status === 2 ? "Converged, so this is a usable first guess." : "Not converged, and far from the truth. Start blurrier."; $("m").style.color = r.status === 2 ? "" : "var(--coral)"; }
+  REG.forEach(function (r, i) { var b = document.createElement("button"); b.type = "button"; b.textContent = "-bb " + r.bb + " -be " + r.be; b.addEventListener("click", function () { show(r, b); }); box.appendChild(b); if (i === 2) show(r, b); });
+})();
+</script>

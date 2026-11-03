@@ -1,0 +1,79 @@
+<header>
+  <div class="ep">Lesson 3</div>
+  <h1>Local DVC Flags</h1>
+  <p class="lede">Three flags shape every run: window size, node spacing and the first guess.</p>
+</header>
+<section>
+  <h2>The basic command</h2>
+  <div class="term"><span class="p">$ spam-ldic</span> <span class="v">unloaded.tif loaded.tif</span> <span class="fl">-pf</span> <span class="v">reg-registration.tsv</span> <span class="fl">-hws</span> <span class="v">25</span> <span class="fl">-ns</span> <span class="v">50</span></div>
+  <div class="wrap"><table>
+    <thead><tr><th scope="col">Flag</th><th scope="col">Means</th><th scope="col" class="n">Default</th></tr></thead>
+    <tbody>
+      <tr><th scope="row"><code>-hws</code></th><td>Half-window size. Width = 2 &times; hws + 1.</td><td class="n">10</td></tr>
+      <tr><th scope="row"><code>-ns</code></th><td>Node spacing. The first node sits one spacing in from the edge.</td><td class="n">10</td></tr>
+      <tr><th scope="row"><code>-pf</code></th><td>The file holding the first guess.</td><td class="n">none</td></tr>
+    </tbody>
+  </table></div>
+</section>
+<section>
+  <h2>Try real settings</h2>
+  <p>Here are 10 real runs. Lower miss means closer to the truth, which we know for this sample.</p>
+  <div class="lab">
+    <div class="pick"><span class="l">-hws</span><span id="h" class="ctrl"></span></div>
+    <div class="pick"><span class="l">-ns</span><span id="n" class="ctrl"></span></div>
+    <div class="term" id="cmd"></div>
+    <div class="nums"><div class="num">Window width<span id="a0"></span></div><div class="num">Nodes run<span id="a1"></span></div><div class="num">Converged<span id="a2"></span></div><div class="num">Failed or at limit<span id="a3"></span></div><div class="num">Typical miss (converged)<span id="a4"></span></div><div class="num">Time<span id="a5"></span></div></div>
+    <canvas id="p" role="img" aria-label="Typical miss and failed nodes against window size"></canvas>
+    <p class="note">The chart shows runs at the selected spacing.</p>
+  </div>
+  <vox>Look at both lines. Small windows are accurate when they work, but more of them fail, because they hold too little pattern. Big windows rarely fail, but they blur the local bulge, so their miss grows. Good settings sit in between. Spacing mostly changes how many nodes you get, and it has little effect on the miss.</vox>
+</section>
+<section>
+  <h2>Why not always use small windows?</h2>
+  <div class="wrap"><table>
+    <thead><tr><th scope="col">Smaller <code>-hws</code></th><th scope="col">Bigger <code>-hws</code></th></tr></thead>
+    <tbody>
+      <tr><td>More local detail</td><td>Steadier, with fewer failures</td></tr>
+      <tr><td>Needs a lot of texture</td><td>Averages everything inside it</td></tr>
+      <tr><td>Faster for each window</td><td>Slower. At spacing 25, hws 40 took 25 s against 1.2 s for hws 5</td></tr>
+    </tbody>
+  </table></div>
+  <p>A useful rule: a window should hold several repeats of your pattern. Test a few sizes on your own scans, because the best size depends on the material.</p>
+  <p>If <code>-ns</code> is smaller than the window width, neighbouring windows overlap. Their results then share voxels, so they aren't fully independent. More nodes doesn't always mean more information.</p>
+</section>
+<section>
+  <h2>What if you forget <code>-pf</code>?</h2>
+  <p>Without a first guess, every window starts at zero movement. This sample moved 15 voxels or more, too far for the hiker from Course 1.</p>
+  <div class="wrap"><table>
+    <thead><tr><th scope="col">Same run</th><th scope="col" class="n">Converged</th><th scope="col" class="n">Typical miss</th></tr></thead>
+    <tbody>
+      <tr><th scope="row">With <code>-pf</code></th><td class="n good">44 of 44</td><td class="n good">0.6 vx</td></tr>
+      <tr><th scope="row">Without <code>-pf</code></th><td class="n bad">0 of 44</td><td class="n bad">18.8 vx</td></tr>
+    </tbody>
+  </table></div>
+  <vox>That's a dramatic difference from one flag! There's no error message here either. SPAM runs happily and writes a file full of bad numbers, so always check <code>returnStatus</code>.</vox>
+</section>
+<section>
+  <h2>Remember this</h2>
+  <ul class="keys">
+    <li><code>-hws</code> trades local detail against steadiness.</li>
+    <li><code>-ns</code> sets how many nodes you get.</li>
+    <li><code>-pf</code> is essential unless the movement is tiny.</li>
+  </ul>
+</section>
+<script>
+(function () {
+  var hs = [5, 10, 15, 25, 40], ns = [25, 50], H = 25, N = 50;
+  function bar(id, list, get, set) { var b = $(id); list.forEach(function (v) { var e = document.createElement("button"); e.type = "button"; e.textContent = v; e.addEventListener("click", function () { set(v); draw(); }); b.appendChild(e); }); }
+  bar("h", hs, 0, function (v) { H = v; }); bar("n", ns, 0, function (v) { N = v; });
+  function draw() {
+    [["h", H], ["n", N]].forEach(function (q) { $(q[0]).querySelectorAll("button").forEach(function (b) { b.setAttribute("aria-pressed", String(+b.textContent === q[1])); }); });
+    var r = GRID.filter(function (g) { return g.ns === N && g.hws === H; })[0], rows = GRID.filter(function (g) { return g.ns === N; });
+    $("cmd").innerHTML = '<span class="p">$ spam-ldic</span> <span class="v">unloaded.tif loaded.tif</span> <span class="fl">-pf</span> <span class="v">reg-registration.tsv</span> <span class="fl">-hws</span> <span class="v">' + H + '</span> <span class="fl">-ns</span> <span class="v">' + N + "</span>";
+    $("a0").textContent = (2 * H + 1) + " vx"; $("a1").textContent = r.tried; $("a2").textContent = r.conv; $("a3").textContent = r.limit + r.failed; $("a4").textContent = r.rms_conv.toFixed(2) + " vx"; $("a5").textContent = r.time + " s";
+    var pct = function (g) { return (g.limit + g.failed) / g.tried * 100; };
+    plot($("p"), 220, [{ color: cssv("--blue"), d: rows.map(function (g) { return [g.hws, g.rms_conv]; }) }, { color: cssv("--coral"), d: rows.map(function (g) { return [g.hws, pct(g) / 10]; }) }], { x: [0, 45], y: [0, 2.3], xt: [5, 10, 15, 25, 40], yt: [0, 1, 2], legend: [[cssv("--blue"), "Typical miss (vx)"], [cssv("--coral"), "Failed share (1 = 10%)"]], dots: [{ x: H, y: r.rms_conv, color: cssv("--blue") }, { x: H, y: pct(r) / 10, color: cssv("--coral") }] });
+  }
+  draw(); addEventListener("resize", draw);
+})();
+</script>

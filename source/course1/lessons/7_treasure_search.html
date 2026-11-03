@@ -1,0 +1,118 @@
+<header>
+  <div class="ep">Lesson 7</div>
+  <h1>The Treasure Search</h1>
+  <p class="lede">When the hint is too far from the truth, stop walking and search the whole field.</p>
+</header>
+<section>
+  <h2>Hiker or treasure hunter?</h2>
+  <vox>The hiker from Lesson 4 is quick and very precise, but only sees nearby. A treasure hunter is different. They divide the field into squares and dig in every single one. It's slow and only accurate to one square, but they can't miss a treasure that's in the field. The best plan is to use both: the hunter finds the right spot, then the hiker gets the exact position.</vox>
+  <p>That's <b>pixel search</b>. For each window, it tests every whole-voxel position in a range, scores each one with correlation, and keeps the best.</p>
+</section>
+<section>
+  <h2>Watch a search</h2>
+  <p>Click a node on the bone, then search. Bright squares on the map are good matches. The white cross is where the search starts, and the red dot is the best position.</p>
+  <div class="lab">
+    <div class="row">
+      <div class="tile"><canvas id="c" width="720" height="480" data-s="2" style="cursor:crosshair" role="img" aria-label="Vertebra. Click to choose a node."></canvas>Click a node. The yellow box is its window.</div>
+      <div class="tile"><canvas class="px" id="h" width="73" height="73" role="img" aria-label="Match score at every position tried"></canvas>Match score at every position tried</div>
+    </div>
+    <label class="s">Search range<input id="r" type="range" min="4" max="36" step="2" value="36"><output></output></label>
+    <div class="ctrl"><button id="go" class="go" type="button">Search this node</button></div>
+    <div class="nums"><div class="num">Positions tried<span id="n1"></span></div><div class="num">Best position<span id="n2"></span></div><div class="num">Best correlation<span id="n3"></span></div><div class="num">Refined answer<span id="n4"></span></div><div class="num">True movement<span id="n5"></span></div></div>
+    <div class="msg" id="m" aria-live="polite"></div>
+  </div>
+  <vox>Try a node near the lesion with a small range, then a large one. If the range is too small, the treasure is outside the field, so the hunter picks the best wrong spot.</vox>
+</section>
+<section>
+  <h2>Everyone starts better</h2>
+  <p>Now run the whole bone from the same made-up example, once with only the registration hint, and once with a pixel search first. A node counts as right when it lands within 2 vx of the true movement, which we know here because we made this bone.</p>
+  <div class="lab">
+    <div class="ctrl"><button id="a" type="button">Registration hint only</button><button id="b" class="go" type="button">Pixel search first</button></div>
+    <canvas id="f" width="720" height="480" data-s="2" role="img" aria-label="Nodes coloured by whether they are right"></canvas>
+    <div class="nums"><div class="num">Right<span id="o1"></span></div><div class="num">Wrong<span id="o2"></span></div><div class="num">Wrong, but status 2<span id="o3"></span></div></div>
+    <p><span class="good">Green</span> nodes are right, and <span class="bad">red</span> nodes are wrong. Even with pixel search, a couple of nodes stay red. That's a false match, the next problem.</p>
+  </div>
+</section>
+<section>
+  <h2>Watch real SPAM get stuck</h2>
+  <p>This video uses the real <code>spam.DIC.register</code>, run one iteration at a time on one 51 vx window. The 3D volume is made up, so the true shift of 26 vx in y is known exactly. Watch the error line and the difference panel.</p>
+  <movie src="media/synthetic_window_iterations.mp4" label="Real SPAM iterations on one window from a made-up volume, from two different starting guesses"></movie>
+  <div class="wrap"><table>
+    <thead><tr><th scope="col">Same window</th><th scope="col" class="n">Starts at y</th><th scope="col" class="n">Ends at y</th><th scope="col" class="n">Iterations</th><th scope="col" class="n">Error</th><th scope="col">Result</th></tr></thead>
+    <tbody>
+      <tr><th scope="row">Far guess</th><td class="n">6.0 vx</td><td class="n">3.9 vx</td><td class="n">50</td><td class="n bad">60.3</td><td>Stuck, status 1</td></tr>
+      <tr><th scope="row">Close guess</th><td class="n">25.7 vx</td><td class="n">26.0 vx</td><td class="n">3</td><td class="n good">0.3</td><td>Converged, status 2</td></tr>
+    </tbody>
+  </table></div>
+  <vox>Same window, same scans, same maths. The only difference is where the hiker started! A pixel search provides that close guess.</vox>
+</section>
+<section>
+  <h2>The trap: false matches</h2>
+  <vox>If you search a huge field, you might find something that looks like treasure but isn't. Bone is repetitive, a bit like a field full of similar rocks. The bigger the search, the more lookalikes there are.</vox>
+  <p>A warning sign is displacements that suddenly become far larger than their neighbours. Using a range built for a badly collapsed sample on a sample that barely moved can make results worse, not better.</p>
+  <div class="wrap"><table>
+    <thead><tr><th scope="col">Search range</th><th scope="col">What goes wrong</th></tr></thead>
+    <tbody>
+      <tr><th scope="row">Too small</th><td>The true match is outside the range, so it can't be found.</td></tr>
+      <tr><th scope="row">Too big</th><td>Slower, with more false matches.</td></tr>
+      <tr><th scope="row">About right</th><td>Just bigger than the movement you expect beyond registration.</td></tr>
+    </tbody>
+  </table></div>
+</section>
+<section>
+  <h2>Why searches often run on half-size scans</h2>
+  <p>The work is the number of positions multiplied by the voxels in a window. It grows very quickly.</p>
+  <div class="wrap"><table>
+    <thead><tr><th scope="col">Search of &plusmn;40, &plusmn;25, &plusmn;10 vx with a 51 vx window</th><th scope="col" class="n">Positions</th><th scope="col" class="n">Voxels per window</th><th scope="col" class="n">Comparisons per node</th></tr></thead>
+    <tbody>
+      <tr><th scope="row">Full size</th><td class="n">86,751</td><td class="n">132,651</td><td class="n">about 11.5 billion</td></tr>
+      <tr><th scope="row">Half size</th><td class="n">12,177</td><td class="n">15,625</td><td class="n">about 190 million</td></tr>
+    </tbody>
+  </table></div>
+  <p>Half size needs about 60 times fewer comparisons. The result is only a rough guess, but that's fine, because local DVC refines it at full size afterwards.</p>
+  <real t="spam/DIC/pixelSearch.py">The local search is <code>pixelSearchLocal</code>. It calls <code>getImagettes</code> to cut a window and a bigger search area, then the compiled <code>pixelSearchCPP</code> computes correlation at every position. Results are whole voxels, with no F of their own: it searches shifts only. That's another reason it must be followed by <code>spam-ldic</code>.</real>
+</section>
+<section>
+  <h2>Remember this</h2>
+  <ul class="keys">
+    <li>Pixel search is slow and rough, but it can't get stuck.</li>
+    <li>Local DVC is quick and precise, but needs a good start.</li>
+    <li>Use pixel search when movement is large or changes sharply, as near a fracture or lesion.</li>
+    <li>Keep the range just big enough, to avoid false matches.</li>
+  </ul>
+</section>
+<script>
+(function () {
+  BONE.ready();
+  var C = $("c"), ctx = ctxOf(C), base = sheet(360, 240, 2), node = [270, 90], H = 20, S = [6, 4], timer;
+  paint(base, function (i, j) { return gray(BONE.fixed(i, j)); });
+  function fw(n) { return function (a, b) { return BONE.fixed(a + n[0], b + n[1]); }; }
+  function gw(n) { return function (a, b) { return BONE.moved(a + n[0], b + n[1]); }; }
+  function drawNode() { ctx.drawImage(base, 0, 0, 360, 240); ctx.strokeStyle = "#ffd166"; ctx.lineWidth = 2; ctx.strokeRect(node[0] - H, node[1] - H, 2 * H + 1, 2 * H + 1); }
+  function blank() { var c = $("h"), x = c.getContext("2d"); x.fillStyle = "#101626"; x.fillRect(0, 0, 73, 73); x.strokeStyle = "#fff"; x.lineWidth = 1; x.beginPath(); x.moveTo(30, 36.5); x.lineTo(43, 36.5); x.moveTo(36.5, 30); x.lineTo(36.5, 43); x.stroke(); }
+  function reset() { clearInterval(timer); drawNode(); blank(); ["n1", "n2", "n3", "n4"].forEach(function (i) { $(i).textContent = "–"; }); var t = BONE.u(node[0], node[1]); $("n5").textContent = "(" + fmt(t[0], 1) + ", " + fmt(t[1], 1) + ")"; $("m").textContent = ""; }
+  C.addEventListener("click", function (e) { var q = C.getBoundingClientRect(), x = Math.round((e.clientX - q.left) / q.width * 360), y = Math.round((e.clientY - q.top) / q.height * 240); if (!BONE.inside(x, y)) { $("m").textContent = "That's outside the bone. Click on the bone."; $("m").style.color = "var(--coral)"; return; } $("m").style.color = ""; node = [x, y]; reset(); });
+  $("r").addEventListener("input", function () { this.nextElementSibling.textContent = "±" + this.value + " vx"; });
+  $("r").nextElementSibling.textContent = "±36 vx";
+  $("go").addEventListener("click", function () {
+    clearInterval(timer); reset(); var R = +$("r").value, h = $("h").getContext("2d"), y = -R, best = { s: -2, x: 0, y: 0 }, count = 0, f = fw(node), g = gw(node), tn = BONE.u(node[0], node[1]);
+    timer = setInterval(function () {
+      for (var line = 0; line < 3 && y <= R; line++, y++) for (var x = -R; x <= R; x++) { var c = compare(f, g, S[0] + x, S[1] + y, H, 2).zncc, col = viridis((c + .2) / 1.2); count++; h.fillStyle = "rgb(" + col.map(Math.round).join(",") + ")"; h.fillRect(36 + x, 36 + y, 1, 1); if (c > best.s) best = { s: c, x: S[0] + x, y: S[1] + y }; }
+      $("n1").textContent = count.toLocaleString(); $("n2").textContent = "(" + best.x + ", " + best.y + ")"; $("n3").textContent = fmt(best.s);
+      if (y > R) { clearInterval(timer); h.fillStyle = "#ff3b3b"; h.fillRect(36 + best.x - S[0] - 1, 36 + best.y - S[1] - 1, 3, 3);
+        var r = register(makeOperator(f, H, 2), g, [best.x, best.y], 50), e = Math.hypot(r.u[0] - tn[0], r.u[1] - tn[1]); $("n4").textContent = "(" + fmt(r.u[0], 1) + ", " + fmt(r.u[1], 1) + ")";
+        $("m").textContent = e < 2 ? "The search found the right place, and the hiker refined it." : "Not right. It's either outside this range, or a false match."; $("m").style.color = e < 2 ? "" : "var(--coral)"; }
+    }, 40);
+  });
+  reset();
+  var F = $("f"), fc = ctxOf(F), cache = {};
+  function runAll(ps) {
+    if (!cache[ps]) { var o = []; for (var y = 30; y < BONE.h; y += 30) for (var x = 30; x < BONE.w; x += 30) { if (!BONE.inside(x, y)) continue; var n = [x, y], f = fw(n), g = gw(n), st = S, tr = BONE.u(x, y); if (ps) { var p = pixelSearch(f, g, H, 36, 1, 2, S); st = [p.x, p.y]; } var r = register(makeOperator(f, H, 2), g, st, 50); o.push({ n: n, u: r.u, status: r.status, ok: Math.hypot(r.u[0] - tr[0], r.u[1] - tr[1]) < 2 }); } cache[ps] = o; }
+    fc.drawImage(base, 0, 0, 360, 240); var good = 0, bad = 0, sneaky = 0;
+    cache[ps].forEach(function (q) { if (q.ok) good++; else { bad++; if (q.status === 2) sneaky++; } fc.strokeStyle = fc.fillStyle = q.ok ? "#3ddc97" : "#ff6b4a"; fc.lineWidth = 1.6; fc.beginPath(); fc.moveTo(q.n[0], q.n[1]); fc.lineTo(q.n[0] + q.u[0], q.n[1] + q.u[1]); fc.stroke(); fc.beginPath(); fc.arc(q.n[0], q.n[1], 2.4, 0, 7); fc.fill(); });
+    $("o1").textContent = good; $("o2").textContent = bad; $("o3").textContent = sneaky;
+  }
+  $("a").addEventListener("click", function () { runAll(0); }); $("b").addEventListener("click", function () { this.textContent = "Working…"; var me = this; setTimeout(function () { runAll(1); me.textContent = "Pixel search first"; }, 30); });
+  runAll(0);
+})();
+</script>

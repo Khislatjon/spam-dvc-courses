@@ -1,0 +1,88 @@
+<header>
+  <div class="ep">Lesson 6</div>
+  <h1>The Army of Windows</h1>
+  <p class="lede">One Phi for the whole bone is too simple. Local DVC gives every small region its own.</p>
+</header>
+<section>
+  <h2>A team of tiny detectives</h2>
+  <vox>Registration is like one general describing the whole battle. Local DVC sends out thousands of little detectives, one for each spot in the bone. Each detective takes the general's report as a hint, then works out what really happened at their own spot. They don't talk to each other, so they can all work at the same time.</vox>
+  <p>Change the settings, then press Run. This is a made-up 2D vertebra with a lesion on the right side, and the area near the lesion moved more than the rest.</p>
+  <div class="lab">
+    <canvas id="c" width="720" height="480" data-s="2" role="img" aria-label="Vertebra with a grid of nodes and windows"></canvas>
+    <label class="s">Node spacing (ns)<input id="ns" type="range" min="20" max="50" step="5" value="30"><output></output></label>
+    <label class="s">Half-window (hws)<input id="hw" type="range" min="8" max="30" step="1" value="20"><output></output></label>
+    <div class="ctrl"><button id="mask" type="button" aria-pressed="true">Mask on</button><button id="run" class="go" type="button">Run local DVC with 4 workers</button><button id="clr" type="button">Clear</button></div>
+    <div class="nums"><div class="num">Grid nodes<span id="a1"></span></div><div class="num">Skipped by mask<span id="a2"></span></div><div class="num">Window size<span id="a3"></span></div><div class="num">Window overlap<span id="a4"></span></div><div class="num">Converged<span id="a5"></span></div><div class="num">Hit the limit<span id="a6"></span></div></div>
+    <p><span class="good">Green</span> nodes converged, and <span class="bad">red</span> nodes hit the limit. Green arrows are drawn twice their real length. The yellow boxes are the workers.</p>
+  </div>
+  <vox>Try these: make the window tiny, or turn the mask off and run it again. Lots of air windows waste time! Watch the area near the lesion too. Its movement is far from the general's hint, so some detectives get it wrong, even when they're green. Lesson 7 fixes that.</vox>
+</section>
+<section>
+  <h2>The two main dials</h2>
+  <div class="wrap"><table>
+    <thead><tr><th scope="col">Setting</th><th scope="col">What it does</th><th scope="col">Bigger means</th><th scope="col">Example</th></tr></thead>
+    <tbody>
+      <tr><th scope="row">Node spacing, <code>-ns</code></th><td>Distance between nodes</td><td>Fewer nodes and less detail, but faster</td><td class="n">50 vx</td></tr>
+      <tr><th scope="row">Half-window, <code>-hws</code></th><td>Voxels each side of the node</td><td>More texture and less noise, but less local</td><td class="n">25 vx</td></tr>
+    </tbody>
+  </table></div>
+  <p>Window width = 2 &times; hws + 1. So hws 25 gives 51 voxels, about 2 mm. With a spacing of 50 and a width of 51, windows barely overlap, so each node is close to an independent measurement.</p>
+  <vox>Small windows see tiny details, but may have too little pattern to be sure. Big windows are confident, but they average everything inside. It's like asking one person or a whole crowd: the crowd is steadier, but it can't tell you what one person thinks.</vox>
+</section>
+<section>
+  <h2>What happens at each node</h2>
+  <div class="wrap"><table>
+    <thead><tr><th scope="col">Order</th><th scope="col">Step</th><th scope="col">Code</th></tr></thead>
+    <tbody>
+      <tr><td class="n">1</td><td>Build the grid. The first node sits one spacing in from the edge.</td><td><code>makeGrid</code></td></tr>
+      <tr><td class="n">2</td><td>Give each node its starting Phi from registration.</td><td><code>-pf</code> file</td></tr>
+      <tr><td class="n">3</td><td>Cut the window, and skip it if it's too masked or too dark.</td><td><code>getImagettes</code></td></tr>
+      <tr><td class="n">4</td><td>Run the hiker from Lesson 4 on this window.</td><td><code>register</code></td></tr>
+      <tr><td class="n">5</td><td>Save Phi, status, error and iterations.</td><td><code>ldic.tsv</code></td></tr>
+    </tbody>
+  </table></div>
+  <real t="spam/DIC/ldic.py">Each node is a separate job, sent to <code>multiprocessing.Pool(processes)</code> and collected with <code>imap_unordered</code>, so nodes finish in any order. That's what <code>-np 4</code> controls. A whole-voxel part of the guess is used to cut the loaded window in the right place, and SPAM keeps only the small remainder to refine, which saves work. <code>getImagettes</code> also returns status &minus;5 when too much of a window is masked. With <code>-mc 0.5</code>, at least half of a window must be unmasked. The <code>-glt</code> option also skips dark windows, but only if air is darker than the limit you set, so check the grey value of air in your scans first.</real>
+  <vox>Masks can save a lot of time. An air window has no real pattern, so it often runs right up to the iteration limit, while bone windows finish quickly. A scan with lots of air can spend most of its time on nothing!</vox>
+</section>
+<section>
+  <h2>Remember this</h2>
+  <ul class="keys">
+    <li>Each node gets its own window and its own Phi.</li>
+    <li>Registration gives the starting guess.</li>
+    <li>The workers don't help each other, so nodes run in parallel.</li>
+    <li>A mask stops SPAM wasting time on air.</li>
+  </ul>
+</section>
+<script>
+(function () {
+  BONE.ready();
+  var C = $("c"), ctx = ctxOf(C), res = {}, timer, useMask = true, base = sheet(360, 240, 2);
+  paint(base, function (i, j) { return gray(BONE.fixed(i, j)); });
+  function nodes() { var ns = +$("ns").value, o = []; for (var y = ns; y < BONE.h; y += ns) for (var x = ns; x < BONE.w; x += ns) o.push([x, y]); return o; }
+  function coverage(n, h) { var c = 0, t = 0; for (var y = -h; y <= h; y += 3) for (var x = -h; x <= h; x += 3) { t++; if (BONE.inside(n[0] + x, n[1] + y)) c++; } return c / t; }
+  function draw(work) {
+    var ns = +$("ns").value, h = +$("hw").value, N = nodes(), sk = 0, ok = 0, lim = 0; ctx.drawImage(base, 0, 0, 360, 240);
+    $("ns").nextElementSibling.textContent = ns + " vx"; $("hw").nextElementSibling.textContent = h + " vx";
+    N.forEach(function (n) {
+      var use = !useMask || coverage(n, h) > .5, k = n.join(), r = res[k];
+      if (!use) { sk++; ctx.fillStyle = "rgba(255,255,255,.28)"; ctx.fillRect(n[0] - 1, n[1] - 1, 2, 2); return; }
+      if (r) { if (r.status === 2) ok++; else lim++; ctx.strokeStyle = ctx.fillStyle = r.status === 2 ? "#3ddc97" : "#ff6b4a"; ctx.lineWidth = 1.4; ctx.beginPath(); ctx.moveTo(n[0], n[1]); ctx.lineTo(n[0] + r.u[0] * 2, n[1] + r.u[1] * 2); ctx.stroke(); ctx.beginPath(); ctx.arc(n[0], n[1], 2, 0, 7); ctx.fill(); }
+      else { ctx.fillStyle = "#7fb2ff"; ctx.beginPath(); ctx.arc(n[0], n[1], 2, 0, 7); ctx.fill(); }
+    });
+    if (!work) { var mid = N[Math.floor(N.length / 2)]; ctx.strokeStyle = "rgba(255,255,255,.75)"; ctx.lineWidth = 1; ctx.strokeRect(mid[0] - h, mid[1] - h, 2 * h + 1, 2 * h + 1); }
+    (work || []).forEach(function (n) { ctx.strokeStyle = "#ffd166"; ctx.lineWidth = 2; ctx.strokeRect(n[0] - h, n[1] - h, 2 * h + 1, 2 * h + 1); });
+    $("a1").textContent = N.length; $("a2").textContent = sk; $("a3").textContent = (2 * h + 1) + " vx"; $("a4").textContent = Math.round(Math.max(0, (2 * h + 1 - ns) / (2 * h + 1)) * 100) + "%"; $("a5").textContent = ok; $("a6").textContent = lim;
+  }
+  function clear() { clearInterval(timer); res = {}; draw(); }
+  function solve(n, h) { var fw = function (a, b) { return BONE.fixed(a + n[0], b + n[1]); }, gw = function (a, b) { return BONE.moved(a + n[0], b + n[1]); }, o = makeOperator(fw, h, 2); return register(o, gw, [6, 4], 50); }
+  $("run").addEventListener("click", function () {
+    clearInterval(timer); res = {}; var h = +$("hw").value, Q = nodes().filter(function (n) { return !useMask || coverage(n, h) > .5; });
+    for (var i = Q.length - 1; i > 0; i--) { var j = Math.floor(((i * 7919) % 104729) / 104729 * (i + 1)), t = Q[i]; Q[i] = Q[j]; Q[j] = t; }
+    timer = setInterval(function () { if (!Q.length) { clearInterval(timer); draw(); return; } var w = Q.splice(0, 4); w.forEach(function (n) { var r = solve(n, h); res[n.join()] = r; }); draw(w); }, 110);
+  });
+  ["ns", "hw"].forEach(function (i) { $(i).addEventListener("input", clear); });
+  $("clr").addEventListener("click", clear);
+  $("mask").addEventListener("click", function () { useMask = !useMask; this.setAttribute("aria-pressed", String(useMask)); this.textContent = useMask ? "Mask on" : "Mask off"; clear(); });
+  draw();
+})();
+</script>
